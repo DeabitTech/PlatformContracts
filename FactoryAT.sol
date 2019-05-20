@@ -365,13 +365,6 @@ contract CustomOwnable {
 contract AdminTools is CustomOwnable {
     using SafeMath for uint256;
 
-    event LogWLThresholdBalanceChanged(address indexed caller, uint256 indexed whitelistThresholdBalance);
-    event LogWLAddressAdded(address indexed caller, address indexed subscriber, uint256 maxAmount);
-    event LogWLAddressRemoved(address indexed caller, address indexed subscriber);
-    event LogFundingAddressAdded(address indexed caller, address indexed subscriber, uint256 maxAmount);
-    event LogFundingAddressRemoved(address indexed caller, address indexed subscriber);
-
-
     struct wlVars {
         bool permitted;
         uint256 maxAmount;
@@ -383,15 +376,6 @@ contract AdminTools is CustomOwnable {
 
     uint256 private whitelistThresholdBalance;
 
-    event WLManagersAdded(address indexed account);
-    event WLManagersRemoved(address indexed account);
-    event WLOperatorsAdded(address indexed account);
-    event WLOperatorsRemoved(address indexed account);
-    event FundingManagersAdded(address indexed account);
-    event FundingManagersRemoved(address indexed account);
-    event FundingOperatorsAdded(address indexed account);
-    event FundingOperatorsRemoved(address indexed account);
-
     mapping (address => bool) private _WLManagers;
     mapping (address => bool) private _FundingManagers;
     mapping (address => bool) private _WLOperators;
@@ -399,11 +383,22 @@ contract AdminTools is CustomOwnable {
 
     address private _minterAddress;
 
-    event MinterChanged(address indexed account);
-
     address private _walletOnTopAddress;
 
-    event WalletOnTopAddressChanged(address indexed account);
+    event WLManagersAdded();
+    event WLManagersRemoved();
+    event WLOperatorsAdded();
+    event WLOperatorsRemoved();
+    event FundingManagersAdded();
+    event FundingManagersRemoved();
+    event FundingOperatorsAdded();
+    event FundingOperatorsRemoved();
+    event MaxWLAmountChanged();
+    event MinterChanged();
+    event WalletOnTopAddressChanged();
+    event LogWLThresholdBalanceChanged();
+    event LogWLAddressAdded();
+    event LogWLAddressRemoved();
 
     constructor(uint256 _whitelistThresholdBalance) public {
         //_addWLManagers(_firstManager);
@@ -423,7 +418,7 @@ contract AdminTools is CustomOwnable {
         require(_minter != address(0), "Not valid minter address!");
         require(_minter != _minterAddress, " No change in minter contract");
         _minterAddress = _minter;
-        emit MinterChanged(_minterAddress);
+        emit MinterChanged();
         return _minterAddress;
     }
 
@@ -436,7 +431,7 @@ contract AdminTools is CustomOwnable {
         require(_wallet != address(0), "Not valid wallet address!");
         require(_wallet != _walletOnTopAddress, " No change in OnTopWallet");
         _walletOnTopAddress = _wallet;
-        emit WalletOnTopAddressChanged(_walletOnTopAddress);
+        emit WalletOnTopAddressChanged();
         return _walletOnTopAddress;
     }
 
@@ -491,12 +486,12 @@ contract AdminTools is CustomOwnable {
 
     function _addWLManagers(address account) internal {
         _WLManagers[account] = true;
-        emit WLManagersAdded(account);
+        emit WLManagersAdded();
     }
 
     function _removeWLManagers(address account) internal {
         _WLManagers[account] = false;
-        emit WLManagersRemoved(account);
+        emit WLManagersRemoved();
     }
 
 
@@ -510,12 +505,12 @@ contract AdminTools is CustomOwnable {
 
     function _addWLOperators(address account) internal {
         _WLOperators[account] = true;
-        emit WLOperatorsAdded(account);
+        emit WLOperatorsAdded();
     }
 
     function _removeWLOperators(address account) internal {
         _WLOperators[account] = false;
-        emit WLOperatorsRemoved(account);
+        emit WLOperatorsRemoved();
     }
 
 
@@ -548,12 +543,12 @@ contract AdminTools is CustomOwnable {
 
     function _addFundingManagers(address account) internal {
         _FundingManagers[account] = true;
-        emit FundingManagersAdded(account);
+        emit FundingManagersAdded();
     }
 
     function _removeFundingManagers(address account) internal {
         _WLManagers[account] = false;
-        emit FundingManagersRemoved(account);
+        emit FundingManagersRemoved();
     }
 
 
@@ -567,12 +562,12 @@ contract AdminTools is CustomOwnable {
 
     function _addFundingOperators(address account) internal {
         _FundingOperators[account] = true;
-        emit FundingOperatorsAdded(account);
+        emit FundingOperatorsAdded();
     }
 
     function _removeFundingOperators(address account) internal {
         _FundingOperators[account] = false;
-        emit FundingOperatorsRemoved(account);
+        emit FundingOperatorsRemoved();
     }
 
     /*  Whitelisting  Mngmt  */
@@ -613,7 +608,7 @@ contract AdminTools is CustomOwnable {
         require(whitelistThresholdBalance != _newThreshold, "New Threshold like the old one!");
         //require(_newThreshold != getWLThresholdBalance(), "NewMax equal to old MaxAmount");
         whitelistThresholdBalance = _newThreshold;
-        emit LogWLThresholdBalanceChanged(msg.sender, whitelistThresholdBalance);
+        emit LogWLThresholdBalanceChanged();
     }
 
     /**
@@ -624,6 +619,7 @@ contract AdminTools is CustomOwnable {
     function changeMaxWLAmount(address _subscriber, uint256 _newMaxToken) public onlyWLOperators {
         require(isWhitelisted(_subscriber), "Investor is not whitelisted!");
         whitelist[_subscriber].maxAmount = _newMaxToken;
+        emit MaxWLAmountChanged();
     }
 
     /**
@@ -640,7 +636,7 @@ contract AdminTools is CustomOwnable {
         whitelist[_subscriber].permitted = true;
         whitelist[_subscriber].maxAmount = _maxAmnt;
 
-        emit LogWLAddressAdded(msg.sender, _subscriber, _maxAmnt);
+        emit LogWLAddressAdded();
     }
 
     /**
@@ -651,14 +647,14 @@ contract AdminTools is CustomOwnable {
     function removeFromWhitelist(address _subscriber, uint256 _balance) public onlyWLOperators {
         require(_subscriber != address(0), "_subscriber is zero");
         require(whitelist[_subscriber].permitted, "not whitelisted");
-        require(_balance <= whitelistThresholdBalance, "_balance greater than whitelist threshold");
+        require(_balance <= whitelistThresholdBalance, "balance greater than whitelist threshold");
 
         whitelistLength--;
 
         whitelist[_subscriber].permitted = false;
         whitelist[_subscriber].maxAmount = 0;
 
-        emit LogWLAddressRemoved(msg.sender, _subscriber);
+        emit LogWLAddressRemoved();
     }
 
     function withdraw() public onlyOwner returns (bool) {
@@ -710,26 +706,32 @@ contract FactoryAT is CustomOwnable {
     uint public lastATLength;
 
     uint256 public deployATFees;
-    address public feeCollector;
+    address public feeCollectorAT;
 
     ERC20 public seedContract;
 
     event ATDeployed(address indexed ATContractAddress, address indexed ownerAddress, uint deployedBlock, uint ATLength);
+    event DeployATFeesChanged();
+    event FeeCollectorATChanged();
 
     constructor(address _seedContract, uint256 _deployATFees, address _feeCollector) public{
         seedContract = ERC20(_seedContract);  // change with SEED address
         deployATFees = _deployATFees;
-        feeCollector = _feeCollector;
+        feeCollectorAT = _feeCollector;
     }
 
     function changeDeployATFees (uint256 _newAmount) public onlyOwner {
         require(_newAmount >= 0, "Deploy fees not suitable!");
+        require(_newAmount != deployATFees, "Deploy fees not changed!");
         deployATFees = _newAmount;
+        emit DeployATFeesChanged();
     }
 
     function changeFeeCollector (address _newCollector) public onlyOwner {
         require(_newCollector != address(0), "Address not suitable!");
-        feeCollector = _newCollector;
+        require(_newCollector != feeCollectorAT, "Collector address not changed!");
+        feeCollectorAT = _newCollector;
+        emit FeeCollectorATChanged();
     }
 
     // useful to know the row count in contracts index
@@ -737,15 +739,18 @@ contract FactoryAT is CustomOwnable {
         return AdminToolsContracts.length;
     }
 
-    // deploy a new AdminTools contract
+    /**
+     * @dev deploy a new AdminTools contract
+     * @notice msg.sender has to approve this contract to spend SEED deployATFees tokens BEFORE calling this function
+     */
     function newAdminTools() public returns(address newContract) {
         require(msg.sender != address(0), "Sender Address is zero");
         require(seedContract.balanceOf(msg.sender) > deployATFees, "Not enough Seed Tokens to deploy AT!");
         address temp = msg.sender;
-        require(!temp.isContract(), "Sender Address is contract");
-        require(feeCollector != address(0), "Sender Address is zero");
-        require(!feeCollector.isContract(), "Collector is contract");
-        seedContract.transferFrom(msg.sender, feeCollector, deployATFees);  // this collecting fees
+        require(!temp.isContract(), "Sender Address is a contract");
+        require(feeCollectorAT != address(0), "Fee Collector is zero");
+        require(!feeCollectorAT.isContract(), "Fee Collector is a contract!");
+        seedContract.transferFrom(msg.sender, feeCollectorAT, deployATFees);  // this collecting fees
         AdminTools c = new AdminTools(0);
         lastATContract = address(c);
         AdminToolsContracts.push(lastATContract);
