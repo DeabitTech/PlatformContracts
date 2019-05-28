@@ -140,315 +140,21 @@ contract CustomOwnable {
     }
 }
 
-// File: d:/SEED/SeedPlatform/contracts/AdminTools.sol
+// File: d:/SEED/SeedPlatform/contracts/IAdminTools.sol
 
-/**
- * @title SetAdministration
- * @dev Base contract implementing a whitelist to keep track of holders and adminitration roles .
- * The construction parameter allow for both whitelisted and non-whitelisted contracts:
- * 1) whitelistThresholdBalance = 0: whitelist enabled, full whitelisting
- * 2) whitelistThresholdBalance > 0: whitelist enabled, partial whitelisting
- * Roles: Owner, Managers and Operators for whitelisting e funding panel
- */
-contract AdminTools is CustomOwnable {
-    using SafeMath for uint256;
-
-    struct wlVars {
-        bool permitted;
-        uint256 maxAmount;
-    }
-
-    mapping (address => wlVars) private whitelist;
-
-    uint8 private whitelistLength;
-
-    uint256 private whitelistThresholdBalance;
-
-    mapping (address => bool) private _WLManagers;
-    mapping (address => bool) private _FundingManagers;
-    mapping (address => bool) private _WLOperators;
-    mapping (address => bool) private _FundingOperators;
-
-    address private _minterAddress;
-
-    address private _walletOnTopAddress;
-
-    event WLManagersAdded();
-    event WLManagersRemoved();
-    event WLOperatorsAdded();
-    event WLOperatorsRemoved();
-    event FundingManagersAdded();
-    event FundingManagersRemoved();
-    event FundingOperatorsAdded();
-    event FundingOperatorsRemoved();
-    event MaxWLAmountChanged();
-    event MinterChanged();
-    event WalletOnTopAddressChanged();
-    event LogWLThresholdBalanceChanged();
-    event LogWLAddressAdded();
-    event LogWLAddressRemoved();
-
-    constructor(uint256 _whitelistThresholdBalance) public {
-        //_addWLManagers(_firstManager);
-        //_addWLOperators(_firstManager);
-        //_addFundingManagers(_firstManager);
-        //_addFundingOperators(_firstManager);
-        //_minterAddress = 0;
-        whitelistThresholdBalance = _whitelistThresholdBalance.mul(10**18);
-    }
-
-    /* Token Minter address, to set like Funding Panel address */
-    function getMinterAddress() public view returns(address){
-        return _minterAddress;
-    }
-
-    function setMinterAddress(address _minter) public onlyOwner returns(address){
-        require(_minter != address(0), "Not valid minter address!");
-        require(_minter != _minterAddress, " No change in minter contract");
-        _minterAddress = _minter;
-        emit MinterChanged();
-        return _minterAddress;
-    }
-
-    /* Wallet receiving extra minted tokens (percentage) */
-    function getWalletOnTopAddress() public view returns (address) {
-        return _walletOnTopAddress;
-    }
-
-    function setWalletOnTopAddress(address _wallet) public onlyOwner returns(address){
-        require(_wallet != address(0), "Not valid wallet address!");
-        require(_wallet != _walletOnTopAddress, " No change in OnTopWallet");
-        _walletOnTopAddress = _wallet;
-        emit WalletOnTopAddressChanged();
-        return _walletOnTopAddress;
-    }
-
-
-    /* Modifiers */
-    modifier onlyWLManagers() {
-        require(isWLManager(msg.sender), "Not a Whitelist Manager!");
-        _;
-    }
-
-    modifier onlyWLOperators() {
-        require(isWLOperator(msg.sender), "Not a Whitelist Operator!");
-        _;
-    }
-
-    modifier onlyFundingManagers() {
-        require(isFundingManager(msg.sender), "Not a Funding Pool Manager!");
-        _;
-    }
-
-    modifier onlyFundingOperators() {
-        require(isFundingOperator(msg.sender), "Not a Funding Pool Operator!");
-        _;
-    }
-
-    /*   WL Roles Mngmt  */
-    function addWLManagers(address account) public onlyOwner {
-        _addWLManagers(account);
-        _addWLOperators(account);
-    }
-
-    function removeWLManagers(address account) public onlyOwner {
-        _removeWLManagers(account);
-        _removeWLManagers(account);
-    }
-
-    function isWLManager(address account) public view returns (bool) {
-        return _WLManagers[account];
-    }
-
-    function addWLOperators(address account) public onlyWLManagers {
-        _addWLOperators(account);
-    }
-
-    function removeWLOperators(address account) public onlyWLManagers {
-        _addWLOperators(account);
-    }
-
-    function renounceWLManager() public onlyWLManagers {
-        _removeWLManagers(msg.sender);
-    }
-
-    function _addWLManagers(address account) internal {
-        _WLManagers[account] = true;
-        emit WLManagersAdded();
-    }
-
-    function _removeWLManagers(address account) internal {
-        _WLManagers[account] = false;
-        emit WLManagersRemoved();
-    }
-
-
-    function isWLOperator(address account) public view returns (bool) {
-        return _WLOperators[account];
-    }
-
-    function renounceWLOperators() public onlyWLOperators {
-        _removeWLOperators(msg.sender);
-    }
-
-    function _addWLOperators(address account) internal {
-        _WLOperators[account] = true;
-        emit WLOperatorsAdded();
-    }
-
-    function _removeWLOperators(address account) internal {
-        _WLOperators[account] = false;
-        emit WLOperatorsRemoved();
-    }
-
-
-    /*   Funding Roles Mngmt  */
-    function addFundingManagers(address account) public onlyOwner {
-        _addFundingManagers(account);
-        _addFundingOperators(account);
-    }
-
-    function removeFundingManagers(address account) public onlyOwner {
-        _removeFundingManagers(account);
-        _removeFundingManagers(account);
-    }
-
-    function isFundingManager(address account) public view returns (bool) {
-        return _FundingManagers[account];
-    }
-
-    function addFundingOperators(address account) public onlyFundingManagers {
-        _addFundingOperators(account);
-    }
-
-    function removeFundingOperators(address account) public onlyFundingManagers {
-        _addFundingOperators(account);
-    }
-
-    function renounceFundingManager() public onlyFundingManagers {
-        _removeFundingManagers(msg.sender);
-    }
-
-    function _addFundingManagers(address account) internal {
-        _FundingManagers[account] = true;
-        emit FundingManagersAdded();
-    }
-
-    function _removeFundingManagers(address account) internal {
-        _WLManagers[account] = false;
-        emit FundingManagersRemoved();
-    }
-
-
-    function isFundingOperator(address account) public view returns (bool) {
-        return _FundingOperators[account];
-    }
-
-    function renounceFundingOperators() public onlyFundingManagers {
-        _removeFundingOperators(msg.sender);
-    }
-
-    function _addFundingOperators(address account) internal {
-        _FundingOperators[account] = true;
-        emit FundingOperatorsAdded();
-    }
-
-    function _removeFundingOperators(address account) internal {
-        _FundingOperators[account] = false;
-        emit FundingOperatorsRemoved();
-    }
-
-    /*  Whitelisting  Mngmt  */
-
-    /**
-     * @return true if subscriber is whitelisted, false otherwise
-     */
-    function isWhitelisted(address _subscriber) public view returns(bool) {
-        return whitelist[_subscriber].permitted;
-    }
-
-    /**
-     * @return the anonymous threshold
-     */
-    function getWLThresholdBalance() public view returns (uint256) {
-        return whitelistThresholdBalance;
-    }
-
-    /**
-     * @return maxAmount for holder
-     */
-    function getMaxWLAmount(address _subscriber) public view returns(uint256) {
-        return whitelist[_subscriber].maxAmount;
-    }
-
-    /**
-     * @dev length of the whitelisted accounts
-     */
-    function getWLLength() public view returns(uint256) {
-        return whitelistLength;
-    }
-
-    /**
-     * @dev set new anonymous threshold
-     * @param _newThreshold The new anonymous threshold.
-     */
-    function setNewThreshold(uint256 _newThreshold) public onlyWLManagers {
-        require(whitelistThresholdBalance != _newThreshold, "New Threshold like the old one!");
-        //require(_newThreshold != getWLThresholdBalance(), "NewMax equal to old MaxAmount");
-        whitelistThresholdBalance = _newThreshold;
-        emit LogWLThresholdBalanceChanged();
-    }
-
-    /**
-     * @dev Change maxAmount for holder
-     * @param _subscriber The subscriber in the whitelist.
-     * @param _newMaxToken New max amount that a subscriber can hold (in set tokens).
-     */
-    function changeMaxWLAmount(address _subscriber, uint256 _newMaxToken) public onlyWLOperators {
-        require(isWhitelisted(_subscriber), "Investor is not whitelisted!");
-        whitelist[_subscriber].maxAmount = _newMaxToken;
-        emit MaxWLAmountChanged();
-    }
-
-    /**
-     * @dev Add the subscriber to the whitelist.
-     * @param _subscriber The subscriber to add to the whitelist.
-     * @param _maxAmnt max amount that a subscriber can hold (in set tokens).
-     */
-    function addToWhitelist(address _subscriber, uint256 _maxAmnt) public onlyWLOperators {
-        require(_subscriber != address(0), "_subscriber is zero");
-        require(!whitelist[_subscriber].permitted, "already whitelisted");
-
-        whitelistLength++;
-
-        whitelist[_subscriber].permitted = true;
-        whitelist[_subscriber].maxAmount = _maxAmnt;
-
-        emit LogWLAddressAdded();
-    }
-
-    /**
-     * @dev Remove the subscriber to the whitelist.
-     * @param _subscriber The subscriber to add to the whitelist.
-     * @param _balance balance of a subscriber to be under the anonymous threshold, otherwise de-whilisting not permitted.
-     */
-    function removeFromWhitelist(address _subscriber, uint256 _balance) public onlyWLOperators {
-        require(_subscriber != address(0), "_subscriber is zero");
-        require(whitelist[_subscriber].permitted, "not whitelisted");
-        require(_balance <= whitelistThresholdBalance, "balance greater than whitelist threshold");
-
-        whitelistLength--;
-
-        whitelist[_subscriber].permitted = false;
-        whitelist[_subscriber].maxAmount = 0;
-
-        emit LogWLAddressRemoved();
-    }
-
-    function withdraw() public onlyOwner returns (bool) {
-        msg.sender.transfer(address(this).balance);
-        return true;
-    }
+interface IAdminTools {
+    function getMinterAddress() external view returns(address);
+    function getWalletOnTopAddress() external view returns (address);
+    function isWLManager(address) external view returns (bool);
+    function isWLOperator(address) external view returns (bool);
+    function isFundingManager(address) external view returns (bool);
+    function isFundingOperator(address) external view returns (bool);
+    function isFundsUnlockerManager(address) external view returns (bool);
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function isWhitelisted(address) external view returns(bool);
+    function getWLThresholdBalance() external view returns (uint256);
+    function getMaxWLAmount(address) external view returns(uint256);
+    function getWLLength() external view returns(uint256);
 }
 
 // File: D:/SEED/SeedPlatform/node_modules/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol
@@ -665,14 +371,11 @@ contract ERC20 is IERC20 {
 
 // File: d:/SEED/SeedPlatform/contracts/IToken.sol
 
-/**
- * @title SetToken interface
- */
 interface IToken {
     function checkTransferAllowed (address from, address to, uint256 value) external view returns (byte);
     function checkTransferFromAllowed (address from, address to, uint256 value) external view returns (byte);
     function checkMintAllowed (address to, uint256 value) external pure returns (byte);
-    function checkBurnAllowed (address from, uint256 value) external pure returns (byte);
+    function checkBurnAllowed (address account, uint256 value) external pure returns (byte);
 }
 
 // File: d:/SEED/SeedPlatform/contracts/Token.sol
@@ -683,7 +386,7 @@ contract Token is IToken, ERC20, CustomOwnable {
     string private _symbol;
     uint8 private _decimals;
 
-    AdminTools private ATContract;
+    IAdminTools private ATContract;
     address private ATAddress;
 
     byte private constant STATUS_ALLOWED = 0x11;
@@ -694,7 +397,7 @@ contract Token is IToken, ERC20, CustomOwnable {
         _symbol = symbol;
         _decimals = 18;
         ATAddress = _ATAddress;
-        ATContract = AdminTools(ATAddress);
+        ATContract = IAdminTools(ATAddress);
     }
 
     modifier onlyMinterAddress() {
@@ -738,7 +441,7 @@ contract Token is IToken, ERC20, CustomOwnable {
         ERC20._mint(_account, _amount);
     }
 
-    function burn(address _account, uint256 _amount) public {
+    function burn(address _account, uint256 _amount) public onlyMinterAddress {
         require(checkBurnAllowed(_account, _amount) == STATUS_ALLOWED, "burn must be allowed");
         ERC20._burn(_account, _amount);
     }
@@ -751,12 +454,16 @@ contract Token is IToken, ERC20, CustomOwnable {
     }
 
     function checkTransferAllowed (address _sender, address _receiver, uint256 _amount) public view returns (byte) {
+        require(_sender != address(0), "Sender can not be 0!");
+        require(_receiver != address(0), "Receiver can not be 0!");
         require(balanceOf(_sender) >= _amount, "Sender does not have enough tokens!");
         require(okToTransferTokens(_receiver, _amount), "Receiver not allowed to perform transfer!");
         return STATUS_ALLOWED;
     }
 
     function checkTransferFromAllowed (address _sender, address _receiver, uint256 _amount) public view returns (byte) {
+        require(_sender != address(0), "Sender can not be 0!");
+        require(_receiver != address(0), "Receiver can not be 0!");
         require(balanceOf(_sender) >= _amount, "Sender does not have enough tokens!");
         require(okToTransferTokens(_receiver, _amount), "Receiver not allowed to perform transfer!");
         return STATUS_ALLOWED;
@@ -772,54 +479,78 @@ contract Token is IToken, ERC20, CustomOwnable {
         return STATUS_ALLOWED;
     }
 
-    function withdraw() public onlyOwner returns (bool) {
-        msg.sender.transfer(address(this).balance);
-        return true;
-    }
+}
 
+// File: d:/SEED/SeedPlatform/contracts/IFundingPanel.sol
+
+interface IFundingPanel {
+    function getFactoryDeployIndex() external view returns(uint8);
+    function isMemberInserted(address) external view returns(bool);
+    function getMembersNumber() external view returns (uint);
+    function getTokenAddress() external view returns (address);
+    function getOwnerData() external view returns (string memory, bytes32);
+    function getMemberAddressByIndex(uint8) external view returns (address);
+    function getMemberDataByAddress(address) external view returns (bool, uint8, string memory, bytes32, uint256, uint);
+    function getTotalRaised() external view returns (uint256);
+    function burnTokensForMember(address, uint256) external;
+}
+
+// File: d:/SEED/SeedPlatform/contracts/IERC20Seed.sol
+
+interface IERC20Seed {
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address owner) external view returns (uint256);
+    function transfer(address to, uint256 value) external returns (bool);
+    function approve(address spender, uint256 value) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 // File: D:/SEED/SeedPlatform/contracts/FundingPanel.sol
 
-/*
-Selezione: impostazione voting con contratto esterno su balanceof per lista holders con diritto di voto
-*/
-
-contract FundingPanel is CustomOwnable {
+contract FundingPanel is CustomOwnable, IFundingPanel {
     using SafeMath for uint256;
 
     // address private owner;
     string private setDocURL;
-    //string private setDocHash;
     bytes32 private setDocHash;
 
     address private seedAddress;
-    ERC20 private seedToken;
+    IERC20Seed private seedToken;
     Token private token;
     address private tokenAddress;
-    AdminTools private ATContract;
+    IAdminTools private ATContract;
     address private ATAddress;
 
     uint8 public exchRateDecimals;
     uint8 public exchangeRateOnTop;
     uint8 public exchangeRateSeed;
-    uint256 public seedMaxSupply;  // can it be changed?
+
+    uint8 public factoryDeployIndex;
+
+    uint256 public seedMaxSupply;
 
     struct infoMember {
         bool isInserted;
-        bool enabled;
+        uint8 disabled; //0=enabled, 1=exit, 2=SetOwnerDisabled, 3=memberDisabled
         string memberURL;
-        //string memberHash;
         bytes32 memberHash;
+        uint256 burnedTokens;
         uint listPointer;
     }
-    mapping(address => infoMember) private membersArray; // mapping of members
-    address[] membersList; //array for counting or accessing in a sequencialing way the members
+    mapping(address => infoMember) public membersArray; // mapping of members
+    address[] public membersList; //array for counting or accessing in a sequencialing way the members
 
     event MemberAdded();
     event MemberRemoved();
     event MemberEnabled();
     event MemberDisabled();
+    event MemberDisabledByMember();
     event MemberURLChanged();
     event MemberHashChanged();
     event TokenExchangeRateChanged();
@@ -830,6 +561,7 @@ contract FundingPanel is CustomOwnable {
     event NewSeedMaxSupplyChanged();
     event MintedToken(uint256 amount, uint256 amountOnTop);
     event FundsUnlocked();
+    event TokensBurnedForMember();
 
     constructor(string memory _setDocURL,
                 bytes32 _setDocHash,
@@ -839,7 +571,7 @@ contract FundingPanel is CustomOwnable {
                 address _seedTokenAddress,
                 uint256 _seedMaxSupply,
                 address _tokenAddress,
-                address _ATAddress) public {
+                address _ATAddress, uint8 _deployIndex) public {
         setDocURL = _setDocURL;
         setDocHash = _setDocHash;
 
@@ -847,22 +579,24 @@ contract FundingPanel is CustomOwnable {
         exchangeRateOnTop = _exchRateOnTop;
         exchRateDecimals = _exchRateDecim;
 
+        factoryDeployIndex = _deployIndex;
+
         uint256 multiplier = 10 ** 18;
         seedMaxSupply = _seedMaxSupply.mul(uint256(multiplier));
 
         tokenAddress = _tokenAddress;
         ATAddress = _ATAddress;
         seedAddress = _seedTokenAddress;
-        seedToken = ERC20(seedAddress);
+        seedToken = IERC20Seed(seedAddress);
         token = Token(tokenAddress);
-        ATContract = AdminTools(ATAddress);
+        ATContract = IAdminTools(ATAddress);
     }
 
 
 /**************** Modifiers ***********/
 
     modifier onlyMemberEnabled() {
-        require(membersArray[msg.sender].isInserted && membersArray[msg.sender].enabled, "Member not present or not enabled");
+        require(membersArray[msg.sender].isInserted && membersArray[msg.sender].disabled==0, "Member not present or not enabled");
         _;
     }
 
@@ -880,20 +614,23 @@ contract FundingPanel is CustomOwnable {
         _;
     }
 
-    modifier onlyFundingOperator() {
+    modifier onlyFundingOperators() {
         require(ATContract.isFundingOperator(msg.sender), "Not an authorized operator!");
         _;
     }
 
+    modifier onlyFundsUnlockerOperators() {
+        require(ATContract.isFundsUnlockerOperator(msg.sender), "Not an authorized operator!");
+        _;
+    }
+
     /**
-     * @dev operator members can change the set token address
+     * @dev get Factory Deploy Index
+     * @return uint8 index
      */
-/*    function changeToken(address _setTokenAddress) public onlyFundingOperator {
-        require(_setTokenAddress != address(0), "Invalid Address");
-        require(_setTokenAddress == tokenAddress, "No new set Token address");
-        tokenAddress = _setTokenAddress;
-        token = Token(tokenAddress);
-    }*/
+    function getFactoryDeployIndex() public view returns(uint8) {
+        return factoryDeployIndex;
+    }
 
     /**
      * @dev find if a member is inserted
@@ -907,10 +644,10 @@ contract FundingPanel is CustomOwnable {
      * @dev only operator members can add a member
      * @return bool for success
      */
-    function addMemberToSet(address memberWallet, bool enabled, string memory memberURL, bytes32 memberHash) public onlyFundingOperator returns (bool) {
+    function addMemberToSet(address memberWallet, uint8 disabled, string memory memberURL, bytes32 memberHash) public onlyFundingOperators returns (bool) {
         require(!isMemberInserted(memberWallet), "Member already inserted!");
         uint memberPlace = membersList.push(memberWallet) - 1;
-        infoMember memory tmpStUp = infoMember(true, enabled, memberURL, memberHash, memberPlace);
+        infoMember memory tmpStUp = infoMember(true, disabled, memberURL, memberHash, 0, memberPlace);
         membersArray[memberWallet] = tmpStUp;
         emit MemberAdded();
         return true;
@@ -920,8 +657,9 @@ contract FundingPanel is CustomOwnable {
      * @dev only operator members can delete a member
      * @return bool for success
      */
-    function deleteMemberFromSet(address memberWallet) public onlyFundingOperator returns (bool) {
+/*    function deleteMemberFromSet(address memberWallet) public onlyFundingOperators returns (bool) {
         require(isMemberInserted(memberWallet), "Member to delete not found!");
+        membersArray[memberWallet].isInserted = false;
         uint rowToDelete = membersArray[memberWallet].listPointer;
         address keyToMove = membersList[membersList.length-1];
         membersList[rowToDelete] = keyToMove;
@@ -929,30 +667,39 @@ contract FundingPanel is CustomOwnable {
         membersList.length--;
         emit MemberRemoved();
         return true;
-    }
+    }*/
 
     /**
      * @return get the number of inserted members in the set
      */
-    function getMemberNumber() public view returns (uint) {
+    function getMembersNumber() public view returns (uint) {
         return membersList.length;
     }
 
     /**
      * @dev only operator memebers can enable a member
      */
-    function enableMember(address _memberAddress) public onlyFundingOperator {
+    function enableMember(address _memberAddress) public onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
-        membersArray[_memberAddress].enabled = true;
+        membersArray[_memberAddress].disabled = 0;
         emit MemberEnabled();
     }
 
     /**
      * @dev operator members can disable an already inserted member
      */
-    function disableMemberByStaff(address _memberAddress) public onlyFundingOperator {
+    function disableMemberByStaffRetire(address _memberAddress) public onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
-        membersArray[_memberAddress].enabled = false;
+        membersArray[_memberAddress].disabled = 2;
+        emit MemberDisabled();
+    }
+
+    /**
+     * @dev operator members can disable an already inserted member
+     */
+    function disableMemberByStaffForExit(address _memberAddress) public onlyFundingOperators {
+        require(membersArray[_memberAddress].isInserted, "Member not present");
+        membersArray[_memberAddress].disabled = 1;
         emit MemberDisabled();
     }
 
@@ -960,23 +707,15 @@ contract FundingPanel is CustomOwnable {
      * @dev member can disable itself if already inserted and enabled
      */
     function disableMemberByMember(address _memberAddress) public onlyMemberEnabled {
-        membersArray[_memberAddress].enabled = false;
-        emit MemberDisabled();
+        membersArray[_memberAddress].disabled = 3;
+        emit MemberDisabledByMember();
     }
 
     /**
      * @dev operator members can change URL of an already inserted member
      */
-    function changeMemberURLByStaff(address _memberAddress, string memory newURL) public onlyFundingOperator {
+    function changeMemberURL(address _memberAddress, string memory newURL) public onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
-        membersArray[_memberAddress].memberURL = newURL;
-        emit MemberURLChanged();
-    }
-
-    /**
-     * @dev member can change URL by itself if already inserted and enabled
-     */
-    function changeMemberURLByMember(address _memberAddress, string memory newURL) public onlyMemberEnabled {
         membersArray[_memberAddress].memberURL = newURL;
         emit MemberURLChanged();
     }
@@ -984,24 +723,16 @@ contract FundingPanel is CustomOwnable {
     /**
      * @dev operator members can change hash of an already inserted member
      */
-    function changeMemberHashByStaff(address _memberAddress, bytes32 newHash) public onlyFundingOperator {
+    function changeMemberHash(address _memberAddress, bytes32 newHash) public onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].memberHash = newHash;
         emit MemberHashChanged();
     }
 
     /**
-     * @dev member can change hash by itself if already inserted and enabled
-     */
-    function changeMemberHashByMember(address _memberAddress, string memory newHash) public onlyMemberEnabled {
-        membersArray[_memberAddress].memberURL = newHash;
-        emit MemberHashChanged();
-    }
-
-    /**
      * @dev operator members can change the rate exchange of the set
      */
-    function changeTokenExchangeRate(uint8 newExchRate) external onlyFundingOperator {
+    function changeTokenExchangeRate(uint8 newExchRate) external onlyFundingOperators {
         require(newExchRate > 0, "Wrong exchange rate!");
         exchangeRateSeed = newExchRate;
         emit TokenExchangeRateChanged();
@@ -1010,7 +741,7 @@ contract FundingPanel is CustomOwnable {
     /**
      * @dev operator members can change the rate exchange on top of the set
      */
-    function changeTokenExchangeOnTopRate(uint8 newExchRate) external onlyFundingOperator {
+    function changeTokenExchangeOnTopRate(uint8 newExchRate) external onlyFundingOperators {
         require(newExchRate > 0, "Wrong exchange rate on top!");
         exchangeRateOnTop = newExchRate;
         emit TokenExchangeOnTopRateChanged();
@@ -1019,7 +750,7 @@ contract FundingPanel is CustomOwnable {
     /**
      * @dev operator members can change the decimals of the set rate exchange
      */
-    function changeTokenExchangeDecimals(uint8 newDecimals) external onlyFundingOperator {
+    function changeTokenExchangeDecimals(uint8 newDecimals) external onlyFundingOperators {
         require(newDecimals >= 0, "Wrong decimals for exchange rate!");
         exchRateDecimals = newDecimals;
         emit TokenExchangeDecimalsChanged();
@@ -1075,22 +806,23 @@ contract FundingPanel is CustomOwnable {
         emit OwnerDataHashChanged();
     }
 
-        /**
+    /**
      * @return get the operator members URL and hash
      */
     function getMemberAddressByIndex(uint8 _index) public view returns (address) {
         return membersList[_index];
     }
 
-    function getMemberDataByAddress(address _memberWallet) public view returns (bool, bool, string memory, bytes32, uint) {
-        return(membersArray[_memberWallet].isInserted, membersArray[_memberWallet].enabled, membersArray[_memberWallet].memberURL,
-                membersArray[_memberWallet].memberHash, membersArray[_memberWallet].listPointer); // mapping of members
+    function getMemberDataByAddress(address _memberWallet) public view returns (bool, uint8, string memory, bytes32, uint256, uint) {
+        require(membersArray[_memberWallet].isInserted, "Member not inserted");
+        return(membersArray[_memberWallet].isInserted, membersArray[_memberWallet].disabled, membersArray[_memberWallet].memberURL,
+                membersArray[_memberWallet].memberHash, membersArray[_memberWallet].burnedTokens, membersArray[_memberWallet].listPointer); // mapping of members
     }
 
     /**
      * @dev change the max Supply of SEED
      */
-    function setNewSeedMaxSupply(uint256 _newMaxSeedSupply) public returns (uint256) {
+    function setNewSeedMaxSupply(uint256 _newMaxSeedSupply) public onlyFundingOperators returns (uint256) {
         seedMaxSupply = _newMaxSeedSupply;
         emit NewSeedMaxSupplyChanged();
         return seedMaxSupply;
@@ -1126,25 +858,37 @@ contract FundingPanel is CustomOwnable {
     /**
      * @dev Funds unlock by operator members
      */
-     function unlockFunds(address memberWallet, uint256 amount) external onlyFundingOperator {
+    function unlockFunds(address memberWallet, uint256 amount) external onlyFundsUnlockerOperators {
          require(seedToken.balanceOf(address(this)) >= amount, "Not enough seeds to unlock!");
-         require(membersArray[memberWallet].isInserted && membersArray[memberWallet].enabled, "Member not present or not enabled");
+         require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
          //seedToken.transferFrom(address(this), memberWallet, amount);
+
          seedToken.transfer(memberWallet, amount);
          emit FundsUnlocked();
-     }
-
-    function withdraw() public onlyOwner returns (bool) {
-        msg.sender.transfer(address(this).balance);
-        return true;
     }
 
+    /**
+     * @dev Burn tokens for members
+     */
+    function burnTokensForMember(address memberWallet, uint256 amount) public {
+         require(token.balanceOf(msg.sender) >= amount, "Not enough tokens to burn!");
+         require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
+         membersArray[memberWallet].burnedTokens = membersArray[memberWallet].burnedTokens.add(amount);
+         token.burn(msg.sender, amount);
+         emit TokensBurnedForMember();
+    }
+}
+
+// File: D:/SEED/SeedPlatform/contracts/IFactoryFP.sol
+
+interface IFactoryFP {
+    function getDeployFPFees() external view returns(uint256);
+    function getFundingPanelContractCount() external view returns(uint);
+    function newFundingPanel(string calldata, bytes32, uint8, uint8, uint8, address, uint256, address, address) external returns(address);
+    function getSingleFundingPanelContract(uint256) external view returns(address);
 }
 
 // File: contracts\FactoryFP.sol
-
-//import "./IERC20Seed.sol";
-
 
 /**
  * Utility library of inline functions on addresses
@@ -1171,12 +915,10 @@ library AddressUtil {
     }
 }
 
-
-contract FactoryFP is CustomOwnable {
+contract FactoryFP is CustomOwnable, IFactoryFP {
     using AddressUtil for address;
 
     address[] public FundingPanelContracts;
-    //mapping(address => address) counters;
 
     address public lastFundingPanelContract;
 
@@ -1185,16 +927,20 @@ contract FactoryFP is CustomOwnable {
     uint256 public deployFPFees;
     address public feeCollectorFP;
 
-    ERC20 public seedContract;
+    IERC20Seed public seedContract;
 
     event FundingPanelDeployed(address indexed lastFundingPanelContract, address indexed ownerAddress, uint deployedBlock, uint FPLength);
     event DeployFPFeesChanged();
     event FeeCollectorFPChanged();
 
     constructor(address _seedContract, uint256 _deployFPFees, address _feeCollector) public{
-        seedContract = ERC20(_seedContract);  // change with SEED address
+        seedContract = IERC20Seed(_seedContract);  // change with SEED address
         deployFPFees = _deployFPFees;
         feeCollectorFP = _feeCollector;
+    }
+
+    function getDeployFPFees() public view returns(uint256) {
+        return deployFPFees;
     }
 
     function changeDeployFPFees (uint256 _newAmount) public onlyOwner {
@@ -1232,16 +978,16 @@ contract FactoryFP is CustomOwnable {
         require(msg.sender != address(0), "Sender Address is zero");
         require(seedContract.balanceOf(msg.sender) > deployFPFees, "Not enough Seed Tokens to deploy AT!");
         address temp = msg.sender;
-        require(!temp.isContract(), "Sender Address is contract");
+        require(!temp.isContract(), "Sender Address is a contract");
         require(feeCollectorFP != address(0), "Sender Address is zero");
-        require(!feeCollectorFP.isContract(), "Collector is contract");
+        require(!feeCollectorFP.isContract(), "Fee Collector is a contract!");
         seedContract.transferFrom(msg.sender, feeCollectorFP, deployFPFees);
         FundingPanel c = new FundingPanel(_setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop, _exchRateDecim,
-                                              _seedTokenAddress, _seedMaxSupply, _tokenAddress, _ATAddress);
+                                              _seedTokenAddress, _seedMaxSupply, _tokenAddress, _ATAddress, uint8(FundingPanelContracts.length));
         lastFundingPanelContract = address(c);
+        c.transferOwnership(msg.sender);
         FundingPanelContracts.push(lastFundingPanelContract);
         lastFundingPanelLength = FundingPanelContracts.length;
-        c.transferOwnership(msg.sender);
         emit FundingPanelDeployed(lastFundingPanelContract, msg.sender, block.number, lastFundingPanelLength);
         return lastFundingPanelContract;
     }
@@ -1251,8 +997,4 @@ contract FactoryFP is CustomOwnable {
         return FundingPanelContracts[_index];
     }
 
-    function withdraw() public onlyOwner returns (bool) {
-        msg.sender.transfer(address(this).balance);
-        return true;
-    }
 }
