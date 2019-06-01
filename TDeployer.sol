@@ -1,5 +1,6 @@
 pragma solidity ^0.5.2;
 
+// File: D:/SEED/SeedPlatformClient/node_modules/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
@@ -76,6 +77,7 @@ interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
+// File: D:/SEED/SeedPlatformClient/node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -183,6 +185,7 @@ library SafeMath {
     }
 }
 
+// File: openzeppelin-solidity/contracts/token/ERC20/ERC20.sol
 
 /**
  * @dev Implementation of the `IERC20` interface.
@@ -408,23 +411,21 @@ contract ERC20 is IERC20 {
     }
 }
 
+// File: d:/SEED/SeedPlatformClient/contracts/IAdminTools.sol
 
 interface IAdminTools {
+    function isFundingOperator(address) external view returns (bool);
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function setFFPAddresses(address, address) external;
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
-    function isWLManager(address) external view returns (bool);
-    function isWLOperator(address) external view returns (bool);
-    function isFundingManager(address) external view returns (bool);
-    function isFundingOperator(address) external view returns (bool);
-    function isFundsUnlockerManager(address) external view returns (bool);
-    function isFundsUnlockerOperator(address) external view returns (bool);
     function isWhitelisted(address) external view returns(bool);
     function setMinterAddress(address) external returns(address);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
-    function getWLLength() external view returns(uint256);
 }
 
+// File: d:/SEED/SeedPlatformClient/contracts/CustomOwnable.sol
 
 /**
  * @title Ownable
@@ -498,18 +499,16 @@ contract CustomOwnable {
     }
 }
 
+// File: d:/SEED/SeedPlatformClient/contracts/IToken.sol
 
 interface IToken {
-    function paused() external view returns (bool);
-    function isImportedContract (address) external view returns (bool);
-    function getImportedContractRate(address) external view returns (uint256);
-    function setImportedContract(address, uint256) external;
     function checkTransferAllowed (address, address, uint256) external view returns (byte);
     function checkTransferFromAllowed (address, address, uint256) external view returns (byte);
     function checkMintAllowed (address, uint256) external pure returns (byte);
     function checkBurnAllowed (address, uint256) external pure returns (byte);
 }
 
+// File: D:/SEED/SeedPlatformClient/contracts/Token.sol
 
 contract Token is IToken, ERC20, CustomOwnable {
 
@@ -697,16 +696,19 @@ contract Token is IToken, ERC20, CustomOwnable {
 
 }
 
+// File: D:/SEED/SeedPlatformClient/contracts/ITDeployer.sol
 
 interface ITDeployer {
     function newToken(address, string calldata, string calldata, address) external returns(address);
 }
 
+// File: contracts\TDeployer.sol
 
 contract TDeployer is CustomOwnable, ITDeployer {
     address private fAddress;
-
     event TokenDeployed(uint deployedBlock);
+
+    //constructor() public {}
 
     modifier onlyFactory() {
         require(msg.sender == fAddress, "Address not allowed to create T Contract!");

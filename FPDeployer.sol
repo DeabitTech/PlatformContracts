@@ -182,19 +182,15 @@ contract CustomOwnable {
 
 
 interface IAdminTools {
+    function isFundingOperator(address) external view returns (bool);
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function setFFPAddresses(address, address) external;
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
-    function isWLManager(address) external view returns (bool);
-    function isWLOperator(address) external view returns (bool);
-    function isFundingManager(address) external view returns (bool);
-    function isFundingOperator(address) external view returns (bool);
-    function isFundsUnlockerManager(address) external view returns (bool);
-    function isFundsUnlockerOperator(address) external view returns (bool);
     function isWhitelisted(address) external view returns(bool);
     function setMinterAddress(address) external returns(address);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
-    function getWLLength() external view returns(uint256);
 }
 
 
@@ -500,10 +496,6 @@ contract ERC20 is IERC20 {
 
 
 interface IToken {
-    function paused() external view returns (bool);
-    function isImportedContract (address) external view returns (bool);
-    function getImportedContractRate(address) external view returns (uint256);
-    function setImportedContract(address, uint256) external;
     function checkTransferAllowed (address, address, uint256) external view returns (byte);
     function checkTransferFromAllowed (address, address, uint256) external view returns (byte);
     function checkMintAllowed (address, uint256) external pure returns (byte);
@@ -702,14 +694,7 @@ interface IFundingPanel {
     function getFactoryDeployIndex() external view returns(uint);
     function isMemberInserted(address) external view returns(bool);
     function getMembersNumber() external view returns (uint);
-    function getTokenAddress() external view returns (address);
-    function getOwnerData() external view returns (string memory, bytes32);
     function getMemberAddressByIndex(uint8) external view returns (address);
-    function getMemberDataByAddress(address) external view returns (bool, uint8, string memory, bytes32, uint256, uint);
-    function getTotalRaised() external view returns (uint256);
-    function unlockFunds(address, uint256) external;
-    function burnTokensForMember(address, uint256) external;
-    function importOtherTokens(address, uint256) external;
 }
 
 
@@ -1121,10 +1106,14 @@ interface IFPDeployer {
 }
 
 
+
 contract FPDeployer is CustomOwnable, IFPDeployer {
+    
     address private fAddress;
 
     event FundingPanelDeployed(uint deployedBlock);
+
+    //constructor() public {}
 
     modifier onlyFactory() {
         require(msg.sender == fAddress, "Address not allowed to create FP!");

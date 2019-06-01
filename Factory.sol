@@ -1,5 +1,6 @@
 pragma solidity ^0.5.2;
 
+// File: D:/SEED/SeedPlatformClient/contracts/CustomOwnable.sol
 
 /**
  * @title Ownable
@@ -73,6 +74,7 @@ contract CustomOwnable {
     }
 }
 
+// File: D:/SEED/SeedPlatformClient/contracts/IERC20Seed.sol
 
 interface IERC20Seed {
     function name() external view returns (string memory);
@@ -88,39 +90,40 @@ interface IERC20Seed {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
+// File: D:/SEED/SeedPlatformClient/contracts/IAdminTools.sol
 
 interface IAdminTools {
+    function isFundingOperator(address) external view returns (bool);
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function setFFPAddresses(address, address) external;
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
-    function isWLManager(address) external view returns (bool);
-    function isWLOperator(address) external view returns (bool);
-    function isFundingManager(address) external view returns (bool);
-    function isFundingOperator(address) external view returns (bool);
-    function isFundsUnlockerManager(address) external view returns (bool);
-    function isFundsUnlockerOperator(address) external view returns (bool);
     function isWhitelisted(address) external view returns(bool);
     function setMinterAddress(address) external returns(address);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
-    function getWLLength() external view returns(uint256);
 }
 
+// File: D:/SEED/SeedPlatformClient/contracts/IATDeployer.sol
 
 interface IATDeployer {
     function newAdminTools() external returns(address);
 }
 
+// File: D:/SEED/SeedPlatformClient/contracts/ITDeployer.sol
 
 interface ITDeployer {
     function newToken(address, string calldata, string calldata, address) external returns(address);
 }
 
+// File: D:/SEED/SeedPlatformClient/contracts/IFPDeployer.sol
 
 interface IFPDeployer {
     function newFundingPanel(address, string calldata, bytes32, uint8, uint8, uint8,
                             address, uint256, address, address, uint) external returns(address);
 }
 
+// File: contracts\Factory.sol
 
 /**
  * Utility library of inline functions on addresses
@@ -273,7 +276,7 @@ contract Factory is CustomOwnable {
         require(sender != address(0), "Sender Address is zero");
         require(!sender.isContract(), "Sender is a Contract");
         require(seedContract.balanceOf(sender) >= TotalFees, "Not enough Seed Tokens to deploy Contracts!");
-        require(seedContract.allowance(sender, feesCollector) >= TotalFees, "Deployer not allow Seed Tokens trasfer!");
+        require(seedContract.allowance(sender, address(this)) >= TotalFees, "Deployer not allow Seed Tokens trasfer!");
 
         seedContract.transferFrom(sender, feesCollector, TotalFees);
         deployer.push(sender);
@@ -288,6 +291,7 @@ contract Factory is CustomOwnable {
         FundingPanelContracts.push(newFP);
 
         IAdminTools ATBrandNew = IAdminTools(newAT);
+        ATBrandNew.setFFPAddresses(address(this), newFP);
         ATBrandNew.setMinterAddress(newFP);
         CustomOwnable customOwnable = CustomOwnable(newAT);
         customOwnable.transferOwnership(sender);

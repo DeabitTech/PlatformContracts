@@ -197,24 +197,20 @@ contract CustomOwnable {
 
 
 interface IAdminTools {
+    function isFundingOperator(address) external view returns (bool);
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function setFFPAddresses(address, address) external;
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
-    function isWLManager(address) external view returns (bool);
-    function isWLOperator(address) external view returns (bool);
-    function isFundingManager(address) external view returns (bool);
-    function isFundingOperator(address) external view returns (bool);
-    function isFundsUnlockerManager(address) external view returns (bool);
-    function isFundsUnlockerOperator(address) external view returns (bool);
     function isWhitelisted(address) external view returns(bool);
     function setMinterAddress(address) external returns(address);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
-    function getWLLength() external view returns(uint256);
 }
 
 
 interface IFactory {
-    function changeATFactoryAddress(address) external;
+    /*function changeATFactoryAddress(address) external;
     function changeTDeployerAddress(address) external;
     function changeFPDeployerAddress(address) external;
     function changeDeployFees (uint256) external;
@@ -228,9 +224,9 @@ interface IFactory {
     function getContractsByIndex(uint256) external view returns (address, address, address, address);
     function getDeployerAddressByIndex(uint256) external view returns (address);
     function getATAddressByIndex(uint256) external view returns (address);
-    function getTAddressByIndex(uint256) external view returns (address);
+    function getTAddressByIndex(uint256) external view returns (address);*/
     function getFPAddressByIndex(uint256) external view returns (address);
-    function withdraw(address) external;
+    //function withdraw(address) external;
 }
 
 
@@ -238,14 +234,7 @@ interface IFundingPanel {
     function getFactoryDeployIndex() external view returns(uint);
     function isMemberInserted(address) external view returns(bool);
     function getMembersNumber() external view returns (uint);
-    function getTokenAddress() external view returns (address);
-    function getOwnerData() external view returns (string memory, bytes32);
     function getMemberAddressByIndex(uint8) external view returns (address);
-    function getMemberDataByAddress(address) external view returns (bool, uint8, string memory, bytes32, uint256, uint);
-    function getTotalRaised() external view returns (uint256);
-    function unlockFunds(address, uint256) external;
-    function burnTokensForMember(address, uint256) external;
-    function importOtherTokens(address, uint256) external;
 }
 
 
@@ -662,9 +651,11 @@ interface IATDeployer {
 
 
 contract ATDeployer is CustomOwnable, IATDeployer {
-    address private fAddress;
 
+    address private fAddress;
     event ATDeployed(uint deployedBlock);
+
+    //constructor() public {}
 
     modifier onlyFactory() {
         require(msg.sender == fAddress, "Address not allowed to create AT Contract!");
@@ -693,6 +684,7 @@ contract ATDeployer is CustomOwnable, IATDeployer {
      */
     function newAdminTools() public onlyFactory returns(address) {
         AdminTools c = new AdminTools(0);
+        c.transferOwnership(msg.sender);
         emit ATDeployed(block.number);
         return address(c);
     }
