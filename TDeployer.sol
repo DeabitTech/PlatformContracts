@@ -1,6 +1,5 @@
 pragma solidity ^0.5.2;
 
-// File: D:/SEED/SeedPlatformClient/node_modules/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
@@ -77,7 +76,6 @@ interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
-// File: D:/SEED/SeedPlatformClient/node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -185,7 +183,6 @@ library SafeMath {
     }
 }
 
-// File: openzeppelin-solidity/contracts/token/ERC20/ERC20.sol
 
 /**
  * @dev Implementation of the `IERC20` interface.
@@ -411,7 +408,6 @@ contract ERC20 is IERC20 {
     }
 }
 
-// File: d:/SEED/SeedPlatformClient/contracts/IAdminTools.sol
 
 interface IAdminTools {
     function isFundingOperator(address) external view returns (bool);
@@ -425,7 +421,6 @@ interface IAdminTools {
     function getMaxWLAmount(address) external view returns(uint256);
 }
 
-// File: d:/SEED/SeedPlatformClient/contracts/CustomOwnable.sol
 
 /**
  * @title Ownable
@@ -499,7 +494,6 @@ contract CustomOwnable {
     }
 }
 
-// File: d:/SEED/SeedPlatformClient/contracts/IToken.sol
 
 interface IToken {
     function checkTransferAllowed (address, address, uint256) external view returns (byte);
@@ -508,7 +502,6 @@ interface IToken {
     function checkBurnAllowed (address, uint256) external pure returns (byte);
 }
 
-// File: D:/SEED/SeedPlatformClient/contracts/Token.sol
 
 contract Token is IToken, ERC20, CustomOwnable {
 
@@ -696,13 +689,11 @@ contract Token is IToken, ERC20, CustomOwnable {
 
 }
 
-// File: D:/SEED/SeedPlatformClient/contracts/ITDeployer.sol
 
 interface ITDeployer {
     function newToken(address, string calldata, string calldata, address) external returns(address);
 }
 
-// File: contracts\TDeployer.sol
 
 contract TDeployer is CustomOwnable, ITDeployer {
     address private fAddress;
