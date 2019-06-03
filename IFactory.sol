@@ -8,6 +8,10 @@ interface IFactory {
     function changeFeesCollector (address) external;
     function deployPanelContracts(string calldata, string calldata, string calldata, bytes32, uint8, uint8, uint8, uint256) external;
     function getTotalDeployFees() external view returns (uint256);
+    function isFactoryDeployer(address) external view returns(bool);
+    function isFactoryATGenerated(address) external view returns(bool);
+    function isFactoryTGenerated(address) external view returns(bool);
+    function isFactoryFPGenerated(address) external view returns(bool);
     function getTotalDeployer() external view returns(uint256);
     function getTotalATContracts() external view returns(uint256);
     function getTotalTContracts() external view returns(uint256);
@@ -17,5 +21,5 @@ interface IFactory {
     function getATAddressByIndex(uint256) external view returns (address);
     function getTAddressByIndex(uint256) external view returns (address);
     function getFPAddressByIndex(uint256) external view returns (address);
-    //function withdraw(address) external;
+    function withdraw(address) external;
 }
