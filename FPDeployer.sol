@@ -1108,7 +1108,6 @@ interface IFPDeployer {
 
 
 contract FPDeployer is CustomOwnable, IFPDeployer {
-    
     address private fAddress;
 
     event FundingPanelDeployed(uint deployedBlock);
