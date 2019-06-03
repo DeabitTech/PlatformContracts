@@ -93,10 +93,10 @@ interface IAdminTools {
     function isFundingOperator(address) external view returns (bool);
     function isFundsUnlockerOperator(address) external view returns (bool);
     function setFFPAddresses(address, address) external;
+    function setMinterAddress(address) external returns(address);
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
     function isWhitelisted(address) external view returns(bool);
-    function setMinterAddress(address) external returns(address);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
 }
@@ -208,7 +208,7 @@ contract Factory is CustomOwnable {
         deployerT = ITDeployer(TDAddress);
         emit TFactoryAddressChanged();
     }
-    
+
     /**
      * @dev change Funding Panel deployer address
      * @param _newFPD new FP deployer address
@@ -280,7 +280,7 @@ contract Factory is CustomOwnable {
         address newT = deployerT.newToken(sender, _name, _symbol, newAT);
         TokenContracts.push(newT);
         address newFP = deployerFP.newFundingPanel(sender, _setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop, _exchRateDecim,
-                                            seedAddress, _seedMaxSupply, newT, newAT, deployerLength);
+                                            seedAddress, _seedMaxSupply, newT, newAT, (deployerLength-1));
         FundingPanelContracts.push(newFP);
 
         IAdminTools ATBrandNew = IAdminTools(newAT);

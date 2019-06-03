@@ -200,17 +200,17 @@ interface IAdminTools {
     function isFundingOperator(address) external view returns (bool);
     function isFundsUnlockerOperator(address) external view returns (bool);
     function setFFPAddresses(address, address) external;
+    function setMinterAddress(address) external returns(address);
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
     function isWhitelisted(address) external view returns(bool);
-    function setMinterAddress(address) external returns(address);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
 }
 
 
 interface IFactory {
-    /*function changeATFactoryAddress(address) external;
+    function changeATFactoryAddress(address) external;
     function changeTDeployerAddress(address) external;
     function changeFPDeployerAddress(address) external;
     function changeDeployFees (uint256) external;
@@ -224,7 +224,7 @@ interface IFactory {
     function getContractsByIndex(uint256) external view returns (address, address, address, address);
     function getDeployerAddressByIndex(uint256) external view returns (address);
     function getATAddressByIndex(uint256) external view returns (address);
-    function getTAddressByIndex(uint256) external view returns (address);*/
+    function getTAddressByIndex(uint256) external view returns (address);
     function getFPAddressByIndex(uint256) external view returns (address);
     //function withdraw(address) external;
 }
@@ -281,6 +281,7 @@ contract AdminTools is CustomOwnable, IAdminTools {
     event FundsUnlockerOperatorsAdded();
     event FundsUnlockerOperatorsRemoved();
     event MaxWLAmountChanged();
+    event MinterOrigins();
     event MinterChanged();
     event WalletOnTopAddressChanged();
     event LogWLThresholdBalanceChanged();
@@ -297,6 +298,7 @@ contract AdminTools is CustomOwnable, IAdminTools {
         FContract = IFactory(FAddress);
         FPAddress = _FPAddress;
         FPContract = IFundingPanel(FPAddress);
+        emit MinterOrigins();
     }
 
     /* Token Minter address, to set like Funding Panel address */
