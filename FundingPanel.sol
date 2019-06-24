@@ -208,19 +208,11 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     }
 
     /**
-     * @dev operator members can change URL of an already inserted member
+     * @dev operator members can change URL and hash of an already inserted member
      */
-    function changeMemberURL(address _memberAddress, string memory newURL) public onlyFundingOperators {
+    function changeMemberData(address _memberAddress, string memory newURL, bytes32 newHash) public onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].memberURL = newURL;
-        emit MemberURLChanged();
-    }
-
-    /**
-     * @dev operator members can change hash of an already inserted member
-     */
-    function changeMemberHash(address _memberAddress, bytes32 newHash) public onlyFundingOperators {
-        require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].memberHash = newHash;
         emit MemberHashChanged();
     }
@@ -287,17 +279,10 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     }
 
     /**
-     * @dev set the owner URL
+     * @dev set the owner URL and hash
      */
-    function setOwnerDataURL(string memory _dataURL) public onlyOwner {
+    function setOwnerData(string memory _dataURL, bytes32 _dataHash) public onlyOwner {
         setDocURL = _dataURL;
-        emit OwnerDataURLChanged();
-    }
-
-    /**
-     * @dev set the owner hash
-     */
-    function setOwnerDataHash(bytes32 _dataHash) public onlyOwner {
         setDocHash = _dataHash;
         emit OwnerDataHashChanged();
     }
