@@ -2,10 +2,9 @@ pragma solidity ^0.5.1;
 
 import "./FundingPanel.sol";
 import "./IFPDeployer.sol";
-import "./IERC20Seed.sol";
 
-contract FPDeployer is CustomOwnable, IFPDeployer {
-    
+
+contract FPDeployer is Ownable, IFPDeployer {
     address private fAddress;
 
     event FundingPanelDeployed(uint deployedBlock);
@@ -40,7 +39,6 @@ contract FPDeployer is CustomOwnable, IFPDeployer {
      * @param _setDocHash hash of the document describing the Panel
      * @param _exchRateSeed exchange rate between SEED tokens received and tokens given to the SEED sender (multiply by 10^_exchRateDecim)
      * @param _exchRateOnTop exchange rate between SEED token received and tokens minted on top (multiply by 10^_exchRateDecim)
-     * @param _exchRateDecim exchange rate decimals
      * @param _seedTokenAddress address of SEED token contract
      * @param _seedMaxSupply max supply of SEED tokens accepted by this contract
      * @param _tokenAddress address of the corresponding Token contract
@@ -48,20 +46,13 @@ contract FPDeployer is CustomOwnable, IFPDeployer {
      * @param newLength number of this contract in the corresponding array in the Factory contract
      * @return address of the deployed Token contract
      */
-    function newFundingPanel(address _caller, string memory _setDocURL,
-                bytes32 _setDocHash,
-                uint8 _exchRateSeed,
-                uint8 _exchRateOnTop,
-                uint8 _exchRateDecim,
-                address _seedTokenAddress,
-                uint256 _seedMaxSupply,
-                address _tokenAddress,
-                address _ATAddress, uint newLength) public onlyFactory returns(address){
+    function newFundingPanel(address _caller, string memory _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
+                address _seedTokenAddress, uint256 _seedMaxSupply, address _tokenAddress, address _ATAddress, uint newLength) public onlyFactory returns(address) {
         require(_caller != address(0), "Sender Address is zero");
-        FundingPanel c = new FundingPanel(_setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop, _exchRateDecim,
+        FundingPanel c = new FundingPanel(_setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop,
                                               _seedTokenAddress, _seedMaxSupply, _tokenAddress, _ATAddress, newLength);
         c.transferOwnership(_caller);
-        emit FundingPanelDeployed(block.number);
+        emit FundingPanelDeployed (block.number);
         return address(c);
     }
 

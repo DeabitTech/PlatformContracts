@@ -1,13 +1,13 @@
 pragma solidity ^0.5.1;
 
 import "./lib/SafeMath.sol";
-import "./CustomOwnable.sol";
+import "./lib/Ownable.sol";
 import "./IAdminTools.sol";
 import "./Token.sol";
 import "./IFundingPanel.sol";
 import "./IERC20Seed.sol";
 
-contract FundingPanel is CustomOwnable, IFundingPanel {
+contract FundingPanel is Ownable, IFundingPanel {
     using SafeMath for uint256;
 
     // address private owner;
@@ -22,8 +22,8 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     address public ATAddress;
 
     uint8 public exchRateDecimals;
-    uint8 public exchangeRateOnTop;
-    uint8 public exchangeRateSeed;
+    uint256 public exchangeRateOnTop;
+    uint256 public exchangeRateSeed;
 
     uint public factoryDeployIndex;
 
@@ -58,26 +58,20 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     event TokensBurnedForMember();
     event MintedImportedToken(uint256 newTokenAmount);
 
-    constructor(string memory _setDocURL,
-                bytes32 _setDocHash,
-                uint8 _exchRateSeed,
-                uint8 _exchRateOnTop,
-                uint8 _exchRateDecim,
-                address _seedTokenAddress,
-                uint256 _seedMaxSupply,
-                address _tokenAddress,
-                address _ATAddress, uint _deployIndex) public {
+    constructor (string memory _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
+                address _seedTokenAddress, uint256 _seedMaxSupply, address _tokenAddress, address _ATAddress, uint _deployIndex) public {
         setDocURL = _setDocURL;
         setDocHash = _setDocHash;
 
         exchangeRateSeed = _exchRateSeed;
         exchangeRateOnTop = _exchRateOnTop;
-        exchRateDecimals = _exchRateDecim;
+        //exchRateDecimals = _exchRateDecim;
+        exchRateDecimals = 18;
 
         factoryDeployIndex = _deployIndex;
 
         uint256 multiplier = 10 ** 18;
-        seedMaxSupply = _seedMaxSupply.mul(uint256(multiplier));
+        seedMaxSupply = _seedMaxSupply.mul(multiplier);
 
         tokenAddress = _tokenAddress;
         ATAddress = _ATAddress;
@@ -220,7 +214,7 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     /**
      * @dev operator members can change the rate exchange of the set
      */
-    function changeTokenExchangeRate(uint8 newExchRate) external onlyFundingOperators {
+    function changeTokenExchangeRate(uint256 newExchRate) external onlyFundingOperators {
         require(newExchRate > 0, "Wrong exchange rate!");
         exchangeRateSeed = newExchRate;
         emit TokenExchangeRateChanged();
@@ -229,20 +223,12 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     /**
      * @dev operator members can change the rate exchange on top of the set
      */
-    function changeTokenExchangeOnTopRate(uint8 newExchRate) external onlyFundingOperators {
+    function changeTokenExchangeOnTopRate(uint256 newExchRate) external onlyFundingOperators {
         require(newExchRate > 0, "Wrong exchange rate on top!");
         exchangeRateOnTop = newExchRate;
         emit TokenExchangeOnTopRateChanged();
     }
 
-    /**
-     * @dev operator members can change the decimals of the set rate exchange
-     */
-    function changeTokenExchangeDecimals(uint8 newDecimals) external onlyFundingOperators {
-        require(newDecimals >= 0, "Wrong decimals for exchange rate!");
-        exchRateDecimals = newDecimals;
-        emit TokenExchangeDecimalsChanged();
-    }
 
     /**
      * @dev Shows the amount of tokens the user will receive for amount of Seed token
@@ -342,7 +328,6 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     function unlockFunds(address memberWallet, uint256 amount) external onlyFundsUnlockerOperators {
          require(seedToken.balanceOf(address(this)) >= amount, "Not enough seeds to unlock!");
          require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
-         //seedToken.transferFrom(address(this), memberWallet, amount);
 
          seedToken.transfer(memberWallet, amount);
          emit FundsUnlocked();

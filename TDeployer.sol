@@ -3,7 +3,7 @@ pragma solidity ^0.5.1;
 import "./Token.sol";
 import "./ITDeployer.sol";
 
-contract TDeployer is CustomOwnable, ITDeployer {
+contract TDeployer is Ownable, ITDeployer {
     address private fAddress;
     event TokenDeployed(uint deployedBlock);
 

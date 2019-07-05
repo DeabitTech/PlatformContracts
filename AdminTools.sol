@@ -1,12 +1,12 @@
 pragma solidity ^0.5.1;
 
 import "./lib/SafeMath.sol";
-import "./CustomOwnable.sol";
+import "./lib/Ownable.sol";
 import "./IAdminTools.sol";
 import "./IFactory.sol";
 import "./IFundingPanel.sol";
 
-contract AdminTools is CustomOwnable, IAdminTools {
+contract AdminTools is Ownable, IAdminTools {
     using SafeMath for uint256;
 
     struct wlVars {
@@ -57,7 +57,7 @@ contract AdminTools is CustomOwnable, IAdminTools {
     event LogWLMassiveAddressesAdded();
     event LogWLAddressRemoved();
 
-    constructor(uint256 _whitelistThresholdBalance) public {
+    constructor (uint256 _whitelistThresholdBalance) public {
         whitelistThresholdBalance = _whitelistThresholdBalance.mul(10**18);
     }
 

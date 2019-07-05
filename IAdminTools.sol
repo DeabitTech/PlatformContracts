@@ -10,4 +10,9 @@ interface IAdminTools {
     function isWhitelisted(address) external view returns(bool);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
+    function addWLManagers(address account) external;
+    function addFundingManagers(address account) external;
+    function addFundsUnlockerManagers(address account) external;
+    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external;
+    function removeWLManagers(address account) external;
 }

@@ -4,7 +4,7 @@ import "./IERC20Seed.sol";
 import "./AdminTools.sol";
 import "./IATDeployer.sol";
 
-contract ATDeployer is CustomOwnable, IATDeployer {
+contract ATDeployer is Ownable, IATDeployer {
 
     address private fAddress;
     event ATDeployed(uint deployedBlock);
@@ -36,10 +36,10 @@ contract ATDeployer is CustomOwnable, IATDeployer {
      * @dev deployment of a new AdminTools contract
      * @return address of the deployed AdminTools contract
      */
-    function newAdminTools() public onlyFactory returns(address) {
-        AdminTools c = new AdminTools(0);
+    function newAdminTools(uint256 _whitelistThresholdBalance) public onlyFactory returns(address) {
+        AdminTools c = new AdminTools(_whitelistThresholdBalance);
         c.transferOwnership(msg.sender);
-        emit ATDeployed(block.number);
+        emit ATDeployed (block.number);
         return address(c);
     }
 

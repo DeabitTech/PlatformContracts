@@ -1,6 +1,7 @@
 pragma solidity ^0.5.2;
 
-import "./CustomOwnable.sol";
+import "./lib/Ownable.sol";
+import "./lib/SafeMath.sol";
 import "./IERC20Seed.sol";
 import "./IAdminTools.sol";
 import "./IATDeployer.sol";
@@ -32,8 +33,9 @@ library AddressUtil {
     }
 }
 
-contract Factory is CustomOwnable {
+contract Factory is Ownable {
     using AddressUtil for address;
+    using SafeMath for uint256;
 
     address[] public deployerList;
     uint public deployerLength;
@@ -55,8 +57,7 @@ contract Factory is CustomOwnable {
     IFPDeployer private deployerFP;
     address private FPDAddress;
 
-    address private feesCollector;
-    uint256 private TotalFees;
+    address private internalDEXAddress;
 
     event NewPanelCreated(address, address, address, address, uint);
     event TotalDeployFeesChanged();
@@ -64,9 +65,9 @@ contract Factory is CustomOwnable {
     event ATFactoryAddressChanged();
     event TFactoryAddressChanged();
     event FPFactoryAddressChanged();
+    event InternalDEXAddressChanged();
 
-    constructor(address _seedAddress, address _ATDAddress, address _TDAddress, address _FPDAddress,
-                address _feesCollector, uint256 _fees) public {
+    constructor (address _seedAddress, address _ATDAddress, address _TDAddress, address _FPDAddress) public {
         seedAddress = _seedAddress;
         seedContract = IERC20Seed(seedAddress);
         ATDAddress = _ATDAddress;
@@ -75,8 +76,6 @@ contract Factory is CustomOwnable {
         deployerT = ITDeployer(_TDAddress);
         FPDAddress = _FPDAddress;
         deployerFP = IFPDeployer(_FPDAddress);
-        feesCollector = _feesCollector;
-        TotalFees = _fees;
     }
 
     /**
@@ -116,67 +115,47 @@ contract Factory is CustomOwnable {
     }
 
     /**
-     * @dev change deployment fees in SEED tokens
-     * @param _newAmount new amount of fees to deploy the contracts set
+     * @dev set internal DEX address
+     * @param _dexAddress internal DEX address
      */
-    function changeDeployFees (uint256 _newAmount) public onlyOwner {
-        require(_newAmount >= 0, "Deploy fees not suitable!");
-        require(_newAmount != TotalFees, "Deploy fees not changed!");
-        TotalFees = _newAmount;
-        emit TotalDeployFeesChanged();
+    function setInternalDEXAddress(address _dexAddress) public onlyOwner {
+        require(_dexAddress != address(0), "Address not suitable!");
+        require(_dexAddress != internalDEXAddress, "AT factory address not changed!");
+        internalDEXAddress = _dexAddress;
+        emit InternalDEXAddressChanged();
     }
 
     /**
-     * @dev change fees collector address
-     * @param _newCollector new collector address
-     */
-    function changeFeesCollector (address _newCollector) public onlyOwner {
-        require(_newCollector != address(0), "Address not suitable!");
-        require(_newCollector != feesCollector, "Collector address not changed!");
-        feesCollector = _newCollector;
-        emit FeeCollectorChanged();
-    }
-
-/*    function checkFactoryCongruity() public view returns(bool){
-        require(ATContractsList.length == deployerLength, "AT Contracts Length not verified!");
-        require(TContractsList.length == deployerLength, "Token Contracts Length not verified!");
-        require(FPContractsList.length == deployerLength, "FP Contracts Length not verified!");
-        return true;
-    }*/
-
-    /**
-     * @dev deploy a new set of contracts for the Panel, with all params needed by contracts. Set the minter address for Token contract
+     * @dev deploy a new set of contracts for the Panel, with all params needed by contracts. Set the minter address for Token contract,
+     * Owner is set as a manager in WL, Funding and FundsUnlocker, DEX is whitelisted
      * @param _name name of the token to be deployed
      * @param _symbol symbol of the token to be deployed
      * @param _setDocURL URL of the document describing the Panel
      * @param _setDocHash hash of the document describing the Panel
      * @param _exchRateSeed exchange rate between SEED tokens received and tokens given to the SEED sender (multiply by 10^_exchRateDecim)
      * @param _exchRateOnTop exchange rate between SEED token received and tokens minted on top (multiply by 10^_exchRateDecim)
-     * @param _exchRateDecim exchange rate decimals
      * @param _seedMaxSupply max supply of SEED tokens accepted by this contract
-     * @notice msg.sender has to approve this contract to spend SEED TotalFees tokens BEFORE calling this function
+     * @param _WLAnonymThr max anonym threshold
      */
     function deployPanelContracts(string memory _name, string memory _symbol, string memory _setDocURL, bytes32 _setDocHash,
-                            uint8 _exchRateSeed, uint8 _exchRateOnTop, uint8 _exchRateDecim, uint256 _seedMaxSupply) public {
+                            uint256 _exchRateSeed, uint256 _exchRateOnTop, uint256 _seedMaxSupply, uint256 _WLAnonymThr) public {
         address sender = msg.sender;
-        //require(checkFactoryCongruity(), "Contracts arrays not correct!");
+
         require(sender != address(0), "Sender Address is zero");
         require(!sender.isContract(), "Sender is a Contract");
-        require(seedContract.balanceOf(sender) >= TotalFees, "Not enough Seed Tokens to deploy Contracts!");
-        require(seedContract.allowance(sender, address(this)) >= TotalFees, "Deployer not allow Seed Tokens trasfer!");
+        require(internalDEXAddress != address(0), "Internal DEX Address is zero");
 
-        seedContract.transferFrom(sender, feesCollector, TotalFees);
         deployers[sender] = true;
         deployerList.push(sender);
         deployerLength = deployerList.length;
 
-        address newAT = deployerAT.newAdminTools();
+        address newAT = deployerAT.newAdminTools(_WLAnonymThr);
         ATContracts[newAT] = true;
         ATContractsList.push(newAT);
         address newT = deployerT.newToken(sender, _name, _symbol, newAT);
         TContracts[newT] = true;
         TContractsList.push(newT);
-        address newFP = deployerFP.newFundingPanel(sender, _setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop, _exchRateDecim,
+        address newFP = deployerFP.newFundingPanel(sender, _setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop, //_exchRateDecim,
                                             seedAddress, _seedMaxSupply, newT, newAT, (deployerLength-1));
         FPContracts[newFP] = true;
         FPContractsList.push(newFP);
@@ -184,17 +163,28 @@ contract Factory is CustomOwnable {
         IAdminTools ATBrandNew = IAdminTools(newAT);
         ATBrandNew.setFFPAddresses(address(this), newFP);
         ATBrandNew.setMinterAddress(newFP);
-        CustomOwnable customOwnable = CustomOwnable(newAT);
+        ATBrandNew.addWLManagers(address(this));
+        ATBrandNew.addWLManagers(sender);
+        ATBrandNew.addFundingManagers(sender);
+        ATBrandNew.addFundsUnlockerManagers(sender);
+
+        uint256 seedMaxAmnt = 300000000 * (10 ** 18);  //Seed Max supply
+        uint256 dexMaxAmnt = seedMaxAmnt.mul(_exchRateSeed).div(10 ** 18);
+        ATBrandNew.addToWhitelist(internalDEXAddress, dexMaxAmnt);
+
+        ATBrandNew.removeWLManagers(address(this));
+
+        Ownable customOwnable = Ownable(newAT);
         customOwnable.transferOwnership(sender);
 
         emit NewPanelCreated(sender, newAT, newT, newFP, deployerLength);
     }
 
     /**
-     * @dev get total deployment fees
+     * @dev get internal DEX address
      */
-    function getTotalDeployFees() public view returns (uint256) {
-        return TotalFees;
+    function getInternalDEXAddress() public view returns(address) {
+        return internalDEXAddress;
     }
 
     /**

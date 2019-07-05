@@ -1,11 +1,11 @@
 pragma solidity ^0.5.1;
 
 import "./lib/ERC20.sol";
+import "./lib/Ownable.sol";
 import "./IAdminTools.sol";
-import "./CustomOwnable.sol";
 import "./IToken.sol";
 
-contract Token is IToken, ERC20, CustomOwnable {
+contract Token is IToken, ERC20, Ownable {
 
     string private _name;
     string private _symbol;
@@ -29,7 +29,7 @@ contract Token is IToken, ERC20, CustomOwnable {
     event Paused(address account);
     event Unpaused(address account);
 
-    constructor(string memory name, string memory symbol, address _ATAddress) public {  // cap? pausable?
+    constructor(string memory name, string memory symbol, address _ATAddress) public {
         _name = name;
         _symbol = symbol;
         _decimals = 18;
