@@ -113,7 +113,7 @@ library SafeMath {
  * @dev The Ownable contract has an owner address, and provides basic authorization control
  * functions, this simplifies the implementation of "user permissions".
  */
-contract CustomOwnable {
+contract Ownable {
     address private _owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -156,11 +156,11 @@ contract CustomOwnable {
      * @notice Renouncing ownership will leave the contract without an owner,
      * thereby removing any functionality that is only available to the owner.
      */
-/*    function renounceOwnership() public onlyOwner {
+    function renounceOwnership() public onlyOwner {
         emit OwnershipTransferred(_owner, address(0));
         _owner = address(0);
     }
-*/
+
     /**
      * @dev Allows the current owner to transfer control of the contract to a newOwner.
      * @param newOwner The address to transfer ownership to.
@@ -191,6 +191,11 @@ interface IAdminTools {
     function isWhitelisted(address) external view returns(bool);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
+    function addWLManagers(address account) external;
+    function addFundingManagers(address account) external;
+    function addFundsUnlockerManagers(address account) external;
+    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external;
+    function removeWLManagers(address account) external;
 }
 
 
@@ -503,7 +508,7 @@ interface IToken {
 }
 
 
-contract Token is IToken, ERC20, CustomOwnable {
+contract Token is IToken, ERC20, Ownable {
 
     string private _name;
     string private _symbol;
@@ -527,7 +532,7 @@ contract Token is IToken, ERC20, CustomOwnable {
     event Paused(address account);
     event Unpaused(address account);
 
-    constructor(string memory name, string memory symbol, address _ATAddress) public {  // cap? pausable?
+    constructor(string memory name, string memory symbol, address _ATAddress) public {
         _name = name;
         _symbol = symbol;
         _decimals = 18;
@@ -713,7 +718,7 @@ interface IERC20Seed {
 }
 
 
-contract FundingPanel is CustomOwnable, IFundingPanel {
+contract FundingPanel is Ownable, IFundingPanel {
     using SafeMath for uint256;
 
     // address private owner;
@@ -728,8 +733,8 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     address public ATAddress;
 
     uint8 public exchRateDecimals;
-    uint8 public exchangeRateOnTop;
-    uint8 public exchangeRateSeed;
+    uint256 public exchangeRateOnTop;
+    uint256 public exchangeRateSeed;
 
     uint public factoryDeployIndex;
 
@@ -764,26 +769,20 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     event TokensBurnedForMember();
     event MintedImportedToken(uint256 newTokenAmount);
 
-    constructor(string memory _setDocURL,
-                bytes32 _setDocHash,
-                uint8 _exchRateSeed,
-                uint8 _exchRateOnTop,
-                uint8 _exchRateDecim,
-                address _seedTokenAddress,
-                uint256 _seedMaxSupply,
-                address _tokenAddress,
-                address _ATAddress, uint _deployIndex) public {
+    constructor (string memory _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
+                address _seedTokenAddress, uint256 _seedMaxSupply, address _tokenAddress, address _ATAddress, uint _deployIndex) public {
         setDocURL = _setDocURL;
         setDocHash = _setDocHash;
 
         exchangeRateSeed = _exchRateSeed;
         exchangeRateOnTop = _exchRateOnTop;
-        exchRateDecimals = _exchRateDecim;
+        //exchRateDecimals = _exchRateDecim;
+        exchRateDecimals = 18;
 
         factoryDeployIndex = _deployIndex;
 
         uint256 multiplier = 10 ** 18;
-        seedMaxSupply = _seedMaxSupply.mul(uint256(multiplier));
+        seedMaxSupply = _seedMaxSupply.mul(multiplier);
 
         tokenAddress = _tokenAddress;
         ATAddress = _ATAddress;
@@ -906,6 +905,14 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     }
 
     /**
+     * @dev member can disable itself if already inserted and enabled
+     */
+    function disableMemberByMember(address _memberAddress) public onlyMemberEnabled {
+        membersArray[_memberAddress].disabled = 3;
+        emit MemberDisabledByMember();
+    }
+
+    /**
      * @dev operator members can change URL and hash of an already inserted member
      */
     function changeMemberData(address _memberAddress, string memory newURL, bytes32 newHash) public onlyFundingOperators {
@@ -916,18 +923,9 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     }
 
     /**
-     * @dev operator members can change hash of an already inserted member
-     */
-    function changeMemberHash(address _memberAddress, bytes32 newHash) public onlyFundingOperators {
-        require(membersArray[_memberAddress].isInserted, "Member not present");
-        membersArray[_memberAddress].memberHash = newHash;
-        emit MemberHashChanged();
-    }
-
-    /**
      * @dev operator members can change the rate exchange of the set
      */
-    function changeTokenExchangeRate(uint8 newExchRate) external onlyFundingOperators {
+    function changeTokenExchangeRate(uint256 newExchRate) external onlyFundingOperators {
         require(newExchRate > 0, "Wrong exchange rate!");
         exchangeRateSeed = newExchRate;
         emit TokenExchangeRateChanged();
@@ -936,20 +934,12 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     /**
      * @dev operator members can change the rate exchange on top of the set
      */
-    function changeTokenExchangeOnTopRate(uint8 newExchRate) external onlyFundingOperators {
+    function changeTokenExchangeOnTopRate(uint256 newExchRate) external onlyFundingOperators {
         require(newExchRate > 0, "Wrong exchange rate on top!");
         exchangeRateOnTop = newExchRate;
         emit TokenExchangeOnTopRateChanged();
     }
 
-    /**
-     * @dev operator members can change the decimals of the set rate exchange
-     */
-    function changeTokenExchangeDecimals(uint8 newDecimals) external onlyFundingOperators {
-        require(newDecimals >= 0, "Wrong decimals for exchange rate!");
-        exchRateDecimals = newDecimals;
-        emit TokenExchangeDecimalsChanged();
-    }
 
     /**
      * @dev Shows the amount of tokens the user will receive for amount of Seed token
@@ -1049,7 +1039,6 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
     function unlockFunds(address memberWallet, uint256 amount) external onlyFundsUnlockerOperators {
          require(seedToken.balanceOf(address(this)) >= amount, "Not enough seeds to unlock!");
          require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
-         //seedToken.transferFrom(address(this), memberWallet, amount);
 
          seedToken.transfer(memberWallet, amount);
          emit FundsUnlocked();
@@ -1087,13 +1076,14 @@ contract FundingPanel is CustomOwnable, IFundingPanel {
 
 
 interface IFPDeployer {
-    function newFundingPanel(address, string calldata, bytes32, uint8, uint8, uint8,
+    function newFundingPanel(address, string calldata, bytes32, uint256, uint256,
                             address, uint256, address, address, uint) external returns(address);
+    function setFactoryAddress(address) external;
+    function getFactoryAddress() external view returns(address);
 }
 
 
-
-contract FPDeployer is CustomOwnable, IFPDeployer {
+contract FPDeployer is Ownable, IFPDeployer {
     address private fAddress;
 
     event FundingPanelDeployed(uint deployedBlock);
@@ -1110,6 +1100,9 @@ contract FPDeployer is CustomOwnable, IFPDeployer {
      * @param _fAddress The factory address.
      */
     function setFactoryAddress(address _fAddress) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }
@@ -1128,7 +1121,6 @@ contract FPDeployer is CustomOwnable, IFPDeployer {
      * @param _setDocHash hash of the document describing the Panel
      * @param _exchRateSeed exchange rate between SEED tokens received and tokens given to the SEED sender (multiply by 10^_exchRateDecim)
      * @param _exchRateOnTop exchange rate between SEED token received and tokens minted on top (multiply by 10^_exchRateDecim)
-     * @param _exchRateDecim exchange rate decimals
      * @param _seedTokenAddress address of SEED token contract
      * @param _seedMaxSupply max supply of SEED tokens accepted by this contract
      * @param _tokenAddress address of the corresponding Token contract
@@ -1136,20 +1128,13 @@ contract FPDeployer is CustomOwnable, IFPDeployer {
      * @param newLength number of this contract in the corresponding array in the Factory contract
      * @return address of the deployed Token contract
      */
-    function newFundingPanel(address _caller, string memory _setDocURL,
-                bytes32 _setDocHash,
-                uint8 _exchRateSeed,
-                uint8 _exchRateOnTop,
-                uint8 _exchRateDecim,
-                address _seedTokenAddress,
-                uint256 _seedMaxSupply,
-                address _tokenAddress,
-                address _ATAddress, uint newLength) public onlyFactory returns(address){
+    function newFundingPanel(address _caller, string memory _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
+                address _seedTokenAddress, uint256 _seedMaxSupply, address _tokenAddress, address _ATAddress, uint newLength) public onlyFactory returns(address) {
         require(_caller != address(0), "Sender Address is zero");
-        FundingPanel c = new FundingPanel(_setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop, _exchRateDecim,
+        FundingPanel c = new FundingPanel(_setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop,
                                               _seedTokenAddress, _seedMaxSupply, _tokenAddress, _ATAddress, newLength);
         c.transferOwnership(_caller);
-        emit FundingPanelDeployed(block.number);
+        emit FundingPanelDeployed (block.number);
         return address(c);
     }
 

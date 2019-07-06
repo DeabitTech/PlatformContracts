@@ -6,7 +6,7 @@ pragma solidity ^0.5.2;
  * @dev The Ownable contract has an owner address, and provides basic authorization control
  * functions, this simplifies the implementation of "user permissions".
  */
-contract CustomOwnable {
+contract Ownable {
     address private _owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -49,11 +49,11 @@ contract CustomOwnable {
      * @notice Renouncing ownership will leave the contract without an owner,
      * thereby removing any functionality that is only available to the owner.
      */
-/*    function renounceOwnership() public onlyOwner {
+    function renounceOwnership() public onlyOwner {
         emit OwnershipTransferred(_owner, address(0));
         _owner = address(0);
     }
-*/
+
     /**
      * @dev Allows the current owner to transfer control of the contract to a newOwner.
      * @param newOwner The address to transfer ownership to.
@@ -70,6 +70,113 @@ contract CustomOwnable {
         require(newOwner != address(0),"Address 0 could not be owner");
         emit OwnershipTransferred(_owner, newOwner);
         _owner = newOwner;
+    }
+}
+
+
+/**
+ * @dev Wrappers over Solidity's arithmetic operations with added overflow
+ * checks.
+ *
+ * Arithmetic operations in Solidity wrap on overflow. This can easily result
+ * in bugs, because programmers usually assume that an overflow raises an
+ * error, which is the standard behavior in high level programming languages.
+ * `SafeMath` restores this intuition by reverting the transaction when an
+ * operation overflows.
+ *
+ * Using this library instead of the unchecked operations eliminates an entire
+ * class of bugs, so it's recommended to use it always.
+ */
+library SafeMath {
+    /**
+     * @dev Returns the addition of two unsigned integers, reverting on
+     * overflow.
+     *
+     * Counterpart to Solidity's `+` operator.
+     *
+     * Requirements:
+     * - Addition cannot overflow.
+     */
+    function add(uint256 a, uint256 b) internal pure returns (uint256) {
+        uint256 c = a + b;
+        require(c >= a, "SafeMath: addition overflow");
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the subtraction of two unsigned integers, reverting on
+     * overflow (when the result is negative).
+     *
+     * Counterpart to Solidity's `-` operator.
+     *
+     * Requirements:
+     * - Subtraction cannot overflow.
+     */
+    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b <= a, "SafeMath: subtraction overflow");
+        uint256 c = a - b;
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the multiplication of two unsigned integers, reverting on
+     * overflow.
+     *
+     * Counterpart to Solidity's `*` operator.
+     *
+     * Requirements:
+     * - Multiplication cannot overflow.
+     */
+    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+        // benefit is lost if 'b' is also tested.
+        // See: https://github.com/OpenZeppelin/openzeppelin-solidity/pull/522
+        if (a == 0) {
+            return 0;
+        }
+
+        uint256 c = a * b;
+        require(c / a == b, "SafeMath: multiplication overflow");
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the integer division of two unsigned integers. Reverts on
+     * division by zero. The result is rounded towards zero.
+     *
+     * Counterpart to Solidity's `/` operator. Note: this function uses a
+     * `revert` opcode (which leaves remaining gas untouched) while Solidity
+     * uses an invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     */
+    function div(uint256 a, uint256 b) internal pure returns (uint256) {
+        // Solidity only automatically asserts when dividing by 0
+        require(b > 0, "SafeMath: division by zero");
+        uint256 c = a / b;
+        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+
+        return c;
+    }
+
+    /**
+     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
+     * Reverts when dividing by zero.
+     *
+     * Counterpart to Solidity's `%` operator. This function uses a `revert`
+     * opcode (which leaves remaining gas untouched) while Solidity uses an
+     * invalid opcode to revert (consuming all remaining gas).
+     *
+     * Requirements:
+     * - The divisor cannot be zero.
+     */
+    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
+        require(b != 0, "SafeMath: modulo by zero");
+        return a % b;
     }
 }
 
@@ -99,22 +206,33 @@ interface IAdminTools {
     function isWhitelisted(address) external view returns(bool);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
+    function addWLManagers(address account) external;
+    function addFundingManagers(address account) external;
+    function addFundsUnlockerManagers(address account) external;
+    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external;
+    function removeWLManagers(address account) external;
 }
 
 
 interface IATDeployer {
-    function newAdminTools() external returns(address);
+    function newAdminTools(uint256) external returns(address);
+    function setFactoryAddress(address) external;
+    function getFactoryAddress() external view returns(address);
 }
 
 
 interface ITDeployer {
     function newToken(address, string calldata, string calldata, address) external returns(address);
+    function setFactoryAddress(address) external;
+    function getFactoryAddress() external view returns(address);
 }
 
 
 interface IFPDeployer {
-    function newFundingPanel(address, string calldata, bytes32, uint8, uint8, uint8,
+    function newFundingPanel(address, string calldata, bytes32, uint256, uint256,
                             address, uint256, address, address, uint) external returns(address);
+    function setFactoryAddress(address) external;
+    function getFactoryAddress() external view returns(address);
 }
 
 
@@ -143,8 +261,9 @@ library AddressUtil {
     }
 }
 
-contract Factory is CustomOwnable {
+contract Factory is Ownable {
     using AddressUtil for address;
+    using SafeMath for uint256;
 
     address[] public deployerList;
     uint public deployerLength;
@@ -166,8 +285,7 @@ contract Factory is CustomOwnable {
     IFPDeployer private deployerFP;
     address private FPDAddress;
 
-    address private feesCollector;
-    uint256 private TotalFees;
+    address private internalDEXAddress;
 
     event NewPanelCreated(address, address, address, address, uint);
     event TotalDeployFeesChanged();
@@ -175,9 +293,9 @@ contract Factory is CustomOwnable {
     event ATFactoryAddressChanged();
     event TFactoryAddressChanged();
     event FPFactoryAddressChanged();
+    event InternalDEXAddressChanged();
 
-    constructor(address _seedAddress, address _ATDAddress, address _TDAddress, address _FPDAddress,
-                address _feesCollector, uint256 _fees) public {
+    constructor (address _seedAddress, address _ATDAddress, address _TDAddress, address _FPDAddress) public {
         seedAddress = _seedAddress;
         seedContract = IERC20Seed(seedAddress);
         ATDAddress = _ATDAddress;
@@ -186,8 +304,6 @@ contract Factory is CustomOwnable {
         deployerT = ITDeployer(_TDAddress);
         FPDAddress = _FPDAddress;
         deployerFP = IFPDeployer(_FPDAddress);
-        feesCollector = _feesCollector;
-        TotalFees = _fees;
     }
 
     /**
@@ -195,6 +311,9 @@ contract Factory is CustomOwnable {
      * @param _newATD new AT deployer address
      */
     function changeATFactoryAddress(address _newATD) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newATD != address(0), "Address not suitable!");
         require(_newATD != ATDAddress, "AT factory address not changed!");
         ATDAddress = _newATD;
@@ -207,6 +326,9 @@ contract Factory is CustomOwnable {
      * @param _newTD new T deployer address
      */
     function changeTDeployerAddress(address _newTD) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/ Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newTD != address(0), "Address not suitable!");
         require(_newTD != TDAddress, "AT factory address not changed!");
         TDAddress = _newTD;
@@ -219,6 +341,9 @@ contract Factory is CustomOwnable {
      * @param _newFPD new FP deployer address
      */
     function changeFPDeployerAddress(address _newFPD) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newFPD != address(0), "Address not suitable!");
         require(_newFPD != ATDAddress, "AT factory address not changed!");
         FPDAddress = _newFPD;
@@ -227,67 +352,50 @@ contract Factory is CustomOwnable {
     }
 
     /**
-     * @dev change deployment fees in SEED tokens
-     * @param _newAmount new amount of fees to deploy the contracts set
+     * @dev set internal DEX address
+     * @param _dexAddress internal DEX address
      */
-    function changeDeployFees (uint256 _newAmount) public onlyOwner {
-        require(_newAmount >= 0, "Deploy fees not suitable!");
-        require(_newAmount != TotalFees, "Deploy fees not changed!");
-        TotalFees = _newAmount;
-        emit TotalDeployFeesChanged();
+    function setInternalDEXAddress(address _dexAddress) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
+        require(_dexAddress != address(0), "Address not suitable!");
+        require(_dexAddress != internalDEXAddress, "AT factory address not changed!");
+        internalDEXAddress = _dexAddress;
+        emit InternalDEXAddressChanged();
     }
 
     /**
-     * @dev change fees collector address
-     * @param _newCollector new collector address
-     */
-    function changeFeesCollector (address _newCollector) public onlyOwner {
-        require(_newCollector != address(0), "Address not suitable!");
-        require(_newCollector != feesCollector, "Collector address not changed!");
-        feesCollector = _newCollector;
-        emit FeeCollectorChanged();
-    }
-
-/*    function checkFactoryCongruity() public view returns(bool){
-        require(ATContractsList.length == deployerLength, "AT Contracts Length not verified!");
-        require(TContractsList.length == deployerLength, "Token Contracts Length not verified!");
-        require(FPContractsList.length == deployerLength, "FP Contracts Length not verified!");
-        return true;
-    }*/
-
-    /**
-     * @dev deploy a new set of contracts for the Panel, with all params needed by contracts. Set the minter address for Token contract
+     * @dev deploy a new set of contracts for the Panel, with all params needed by contracts. Set the minter address for Token contract,
+     * Owner is set as a manager in WL, Funding and FundsUnlocker, DEX is whitelisted
      * @param _name name of the token to be deployed
      * @param _symbol symbol of the token to be deployed
      * @param _setDocURL URL of the document describing the Panel
      * @param _setDocHash hash of the document describing the Panel
      * @param _exchRateSeed exchange rate between SEED tokens received and tokens given to the SEED sender (multiply by 10^_exchRateDecim)
      * @param _exchRateOnTop exchange rate between SEED token received and tokens minted on top (multiply by 10^_exchRateDecim)
-     * @param _exchRateDecim exchange rate decimals
      * @param _seedMaxSupply max supply of SEED tokens accepted by this contract
-     * @notice msg.sender has to approve this contract to spend SEED TotalFees tokens BEFORE calling this function
+     * @param _WLAnonymThr max anonym threshold
      */
     function deployPanelContracts(string memory _name, string memory _symbol, string memory _setDocURL, bytes32 _setDocHash,
-                            uint8 _exchRateSeed, uint8 _exchRateOnTop, uint8 _exchRateDecim, uint256 _seedMaxSupply) public {
+                            uint256 _exchRateSeed, uint256 _exchRateOnTop, uint256 _seedMaxSupply, uint256 _WLAnonymThr) public {
         address sender = msg.sender;
-        //require(checkFactoryCongruity(), "Contracts arrays not correct!");
+
         require(sender != address(0), "Sender Address is zero");
         require(!sender.isContract(), "Sender is a Contract");
-        require(seedContract.balanceOf(sender) >= TotalFees, "Not enough Seed Tokens to deploy Contracts!");
-        require(seedContract.allowance(sender, address(this)) >= TotalFees, "Deployer not allow Seed Tokens trasfer!");
+        require(internalDEXAddress != address(0), "Internal DEX Address is zero");
 
-        seedContract.transferFrom(sender, feesCollector, TotalFees);
         deployers[sender] = true;
         deployerList.push(sender);
         deployerLength = deployerList.length;
 
-        address newAT = deployerAT.newAdminTools();
+        address newAT = deployerAT.newAdminTools(_WLAnonymThr);
         ATContracts[newAT] = true;
         ATContractsList.push(newAT);
         address newT = deployerT.newToken(sender, _name, _symbol, newAT);
         TContracts[newT] = true;
         TContractsList.push(newT);
-        address newFP = deployerFP.newFundingPanel(sender, _setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop, _exchRateDecim,
+        address newFP = deployerFP.newFundingPanel(sender, _setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop,
                                             seedAddress, _seedMaxSupply, newT, newAT, (deployerLength-1));
         FPContracts[newFP] = true;
         FPContractsList.push(newFP);
@@ -295,17 +403,28 @@ contract Factory is CustomOwnable {
         IAdminTools ATBrandNew = IAdminTools(newAT);
         ATBrandNew.setFFPAddresses(address(this), newFP);
         ATBrandNew.setMinterAddress(newFP);
-        CustomOwnable customOwnable = CustomOwnable(newAT);
+        ATBrandNew.addWLManagers(address(this));
+        ATBrandNew.addWLManagers(sender);
+        ATBrandNew.addFundingManagers(sender);
+        ATBrandNew.addFundsUnlockerManagers(sender);
+
+        uint256 seedMaxAmnt = 300000000 * (10 ** 18);  //Seed Max supply
+        uint256 dexMaxAmnt = seedMaxAmnt.mul(_exchRateSeed).div(10 ** 18);
+        ATBrandNew.addToWhitelist(internalDEXAddress, dexMaxAmnt);
+
+        ATBrandNew.removeWLManagers(address(this));
+
+        Ownable customOwnable = Ownable(newAT);
         customOwnable.transferOwnership(sender);
 
         emit NewPanelCreated(sender, newAT, newT, newFP, deployerLength);
     }
 
     /**
-     * @dev get total deployment fees
+     * @dev get internal DEX address
      */
-    function getTotalDeployFees() public view returns (uint256) {
-        return TotalFees;
+    function getInternalDEXAddress() public view returns(address) {
+        return internalDEXAddress;
     }
 
     /**

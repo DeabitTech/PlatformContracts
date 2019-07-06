@@ -128,7 +128,7 @@ library SafeMath {
  * @dev The Ownable contract has an owner address, and provides basic authorization control
  * functions, this simplifies the implementation of "user permissions".
  */
-contract CustomOwnable {
+contract Ownable {
     address private _owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -171,11 +171,11 @@ contract CustomOwnable {
      * @notice Renouncing ownership will leave the contract without an owner,
      * thereby removing any functionality that is only available to the owner.
      */
-/*    function renounceOwnership() public onlyOwner {
+    function renounceOwnership() public onlyOwner {
         emit OwnershipTransferred(_owner, address(0));
         _owner = address(0);
     }
-*/
+
     /**
      * @dev Allows the current owner to transfer control of the contract to a newOwner.
      * @param newOwner The address to transfer ownership to.
@@ -206,6 +206,11 @@ interface IAdminTools {
     function isWhitelisted(address) external view returns(bool);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
+    function addWLManagers(address account) external;
+    function addFundingManagers(address account) external;
+    function addFundsUnlockerManagers(address account) external;
+    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external;
+    function removeWLManagers(address account) external;
 }
 
 
@@ -213,9 +218,7 @@ interface IFactory {
     function changeATFactoryAddress(address) external;
     function changeTDeployerAddress(address) external;
     function changeFPDeployerAddress(address) external;
-    function changeDeployFees (uint256) external;
-    function changeFeesCollector (address) external;
-    function deployPanelContracts(string calldata, string calldata, string calldata, bytes32, uint8, uint8, uint8, uint256) external;
+    function deployPanelContracts(string calldata, string calldata, string calldata, bytes32, uint8, uint8, uint256, uint256) external;
     function getTotalDeployFees() external view returns (uint256);
     function isFactoryDeployer(address) external view returns(bool);
     function isFactoryATGenerated(address) external view returns(bool);
@@ -242,7 +245,7 @@ interface IFundingPanel {
 }
 
 
-contract AdminTools is CustomOwnable, IAdminTools {
+contract AdminTools is Ownable, IAdminTools {
     using SafeMath for uint256;
 
     struct wlVars {
@@ -293,7 +296,7 @@ contract AdminTools is CustomOwnable, IAdminTools {
     event LogWLMassiveAddressesAdded();
     event LogWLAddressRemoved();
 
-    constructor(uint256 _whitelistThresholdBalance) public {
+    constructor (uint256 _whitelistThresholdBalance) public {
         whitelistThresholdBalance = _whitelistThresholdBalance.mul(10**18);
     }
 
@@ -652,11 +655,13 @@ contract AdminTools is CustomOwnable, IAdminTools {
 
 
 interface IATDeployer {
-    function newAdminTools() external returns(address);
+    function newAdminTools(uint256) external returns(address);
+    function setFactoryAddress(address) external;
+    function getFactoryAddress() external view returns(address);
 }
 
 
-contract ATDeployer is CustomOwnable, IATDeployer {
+contract ATDeployer is Ownable, IATDeployer {
 
     address private fAddress;
     event ATDeployed(uint deployedBlock);
@@ -673,6 +678,9 @@ contract ATDeployer is CustomOwnable, IATDeployer {
      * @param _fAddress The factory address.
      */
     function setFactoryAddress(address _fAddress) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }
@@ -688,10 +696,10 @@ contract ATDeployer is CustomOwnable, IATDeployer {
      * @dev deployment of a new AdminTools contract
      * @return address of the deployed AdminTools contract
      */
-    function newAdminTools() public onlyFactory returns(address) {
-        AdminTools c = new AdminTools(0);
+    function newAdminTools(uint256 _whitelistThresholdBalance) public onlyFactory returns(address) {
+        AdminTools c = new AdminTools(_whitelistThresholdBalance);
         c.transferOwnership(msg.sender);
-        emit ATDeployed(block.number);
+        emit ATDeployed (block.number);
         return address(c);
     }
 

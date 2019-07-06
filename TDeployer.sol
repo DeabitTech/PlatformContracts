@@ -409,25 +409,12 @@ contract ERC20 is IERC20 {
 }
 
 
-interface IAdminTools {
-    function isFundingOperator(address) external view returns (bool);
-    function isFundsUnlockerOperator(address) external view returns (bool);
-    function setFFPAddresses(address, address) external;
-    function setMinterAddress(address) external returns(address);
-    function getMinterAddress() external view returns(address);
-    function getWalletOnTopAddress() external view returns (address);
-    function isWhitelisted(address) external view returns(bool);
-    function getWLThresholdBalance() external view returns (uint256);
-    function getMaxWLAmount(address) external view returns(uint256);
-}
-
-
 /**
  * @title Ownable
  * @dev The Ownable contract has an owner address, and provides basic authorization control
  * functions, this simplifies the implementation of "user permissions".
  */
-contract CustomOwnable {
+contract Ownable {
     address private _owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
@@ -470,11 +457,11 @@ contract CustomOwnable {
      * @notice Renouncing ownership will leave the contract without an owner,
      * thereby removing any functionality that is only available to the owner.
      */
-/*    function renounceOwnership() public onlyOwner {
+    function renounceOwnership() public onlyOwner {
         emit OwnershipTransferred(_owner, address(0));
         _owner = address(0);
     }
-*/
+
     /**
      * @dev Allows the current owner to transfer control of the contract to a newOwner.
      * @param newOwner The address to transfer ownership to.
@@ -495,6 +482,24 @@ contract CustomOwnable {
 }
 
 
+interface IAdminTools {
+    function isFundingOperator(address) external view returns (bool);
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function setFFPAddresses(address, address) external;
+    function setMinterAddress(address) external returns(address);
+    function getMinterAddress() external view returns(address);
+    function getWalletOnTopAddress() external view returns (address);
+    function isWhitelisted(address) external view returns(bool);
+    function getWLThresholdBalance() external view returns (uint256);
+    function getMaxWLAmount(address) external view returns(uint256);
+    function addWLManagers(address account) external;
+    function addFundingManagers(address account) external;
+    function addFundsUnlockerManagers(address account) external;
+    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external;
+    function removeWLManagers(address account) external;
+}
+
+
 interface IToken {
     function checkTransferAllowed (address, address, uint256) external view returns (byte);
     function checkTransferFromAllowed (address, address, uint256) external view returns (byte);
@@ -503,7 +508,7 @@ interface IToken {
 }
 
 
-contract Token is IToken, ERC20, CustomOwnable {
+contract Token is IToken, ERC20, Ownable {
 
     string private _name;
     string private _symbol;
@@ -527,7 +532,7 @@ contract Token is IToken, ERC20, CustomOwnable {
     event Paused(address account);
     event Unpaused(address account);
 
-    constructor(string memory name, string memory symbol, address _ATAddress) public {  // cap? pausable?
+    constructor(string memory name, string memory symbol, address _ATAddress) public {
         _name = name;
         _symbol = symbol;
         _decimals = 18;
@@ -692,10 +697,12 @@ contract Token is IToken, ERC20, CustomOwnable {
 
 interface ITDeployer {
     function newToken(address, string calldata, string calldata, address) external returns(address);
+    function setFactoryAddress(address) external;
+    function getFactoryAddress() external view returns(address);
 }
 
 
-contract TDeployer is CustomOwnable, ITDeployer {
+contract TDeployer is Ownable, ITDeployer {
     address private fAddress;
     event TokenDeployed(uint deployedBlock);
 
@@ -707,6 +714,9 @@ contract TDeployer is CustomOwnable, ITDeployer {
     }
 
     function setFactoryAddress(address _fAddress) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }
