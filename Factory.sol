@@ -83,6 +83,9 @@ contract Factory is Ownable {
      * @param _newATD new AT deployer address
      */
     function changeATFactoryAddress(address _newATD) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newATD != address(0), "Address not suitable!");
         require(_newATD != ATDAddress, "AT factory address not changed!");
         ATDAddress = _newATD;
@@ -95,6 +98,9 @@ contract Factory is Ownable {
      * @param _newTD new T deployer address
      */
     function changeTDeployerAddress(address _newTD) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/ Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newTD != address(0), "Address not suitable!");
         require(_newTD != TDAddress, "AT factory address not changed!");
         TDAddress = _newTD;
@@ -107,6 +113,9 @@ contract Factory is Ownable {
      * @param _newFPD new FP deployer address
      */
     function changeFPDeployerAddress(address _newFPD) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newFPD != address(0), "Address not suitable!");
         require(_newFPD != ATDAddress, "AT factory address not changed!");
         FPDAddress = _newFPD;
@@ -119,6 +128,9 @@ contract Factory is Ownable {
      * @param _dexAddress internal DEX address
      */
     function setInternalDEXAddress(address _dexAddress) public onlyOwner {
+        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        //require(block.number < 9500000, "Time expired!");  //mainnet
+        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_dexAddress != address(0), "Address not suitable!");
         require(_dexAddress != internalDEXAddress, "AT factory address not changed!");
         internalDEXAddress = _dexAddress;
@@ -155,7 +167,7 @@ contract Factory is Ownable {
         address newT = deployerT.newToken(sender, _name, _symbol, newAT);
         TContracts[newT] = true;
         TContractsList.push(newT);
-        address newFP = deployerFP.newFundingPanel(sender, _setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop, //_exchRateDecim,
+        address newFP = deployerFP.newFundingPanel(sender, _setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop,
                                             seedAddress, _seedMaxSupply, newT, newAT, (deployerLength-1));
         FPContracts[newFP] = true;
         FPContractsList.push(newFP);
