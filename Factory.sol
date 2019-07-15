@@ -197,6 +197,7 @@ interface IERC20Seed {
 
 
 interface IAdminTools {
+    function setWalletOnTopAddress(address _wallet) external returns(address);
     function isFundingOperator(address) external view returns (bool);
     function isFundsUnlockerOperator(address) external view returns (bool);
     function setFFPAddresses(address, address) external;
@@ -311,7 +312,7 @@ contract Factory is Ownable {
      * @param _newATD new AT deployer address
      */
     function changeATFactoryAddress(address _newATD) public onlyOwner {
-        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newATD != address(0), "Address not suitable!");
@@ -326,7 +327,7 @@ contract Factory is Ownable {
      * @param _newTD new T deployer address
      */
     function changeTDeployerAddress(address _newTD) public onlyOwner {
-        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/ Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newTD != address(0), "Address not suitable!");
@@ -341,7 +342,7 @@ contract Factory is Ownable {
      * @param _newFPD new FP deployer address
      */
     function changeFPDeployerAddress(address _newFPD) public onlyOwner {
-        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newFPD != address(0), "Address not suitable!");
@@ -356,7 +357,7 @@ contract Factory is Ownable {
      * @param _dexAddress internal DEX address
      */
     function setInternalDEXAddress(address _dexAddress) public onlyOwner {
-        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_dexAddress != address(0), "Address not suitable!");
@@ -407,10 +408,13 @@ contract Factory is Ownable {
         ATBrandNew.addWLManagers(sender);
         ATBrandNew.addFundingManagers(sender);
         ATBrandNew.addFundsUnlockerManagers(sender);
+        ATBrandNew.setWalletOnTopAddress(sender);
 
-        uint256 seedMaxAmnt = 300000000 * (10 ** 18);  //Seed Max supply
-        uint256 dexMaxAmnt = seedMaxAmnt.mul(_exchRateSeed).div(10 ** 18);
+        uint256 dexMaxAmnt = _exchRateSeed.mul(300000000);  //Seed Max supply
         ATBrandNew.addToWhitelist(internalDEXAddress, dexMaxAmnt);
+
+        uint256 onTopMaxAmnt = _seedMaxSupply.mul(_exchRateSeed);
+        ATBrandNew.addToWhitelist(sender, onTopMaxAmnt);
 
         ATBrandNew.removeWLManagers(address(this));
 
