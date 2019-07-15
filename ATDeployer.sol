@@ -21,7 +21,7 @@ contract ATDeployer is Ownable, IATDeployer {
      * @param _fAddress The factory address.
      */
     function setFactoryAddress(address _fAddress) public onlyOwner {
-        require(block.number < 5998000, "Time expired!");  //ropsten (Jul 15)
+        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");

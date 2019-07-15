@@ -1,6 +1,7 @@
 pragma solidity ^0.5.2;
 
 interface IAdminTools {
+    function setWalletOnTopAddress(address _wallet) external returns(address);
     function isFundingOperator(address) external view returns (bool);
     function isFundsUnlockerOperator(address) external view returns (bool);
     function setFFPAddresses(address, address) external;

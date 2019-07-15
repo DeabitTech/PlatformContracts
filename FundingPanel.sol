@@ -70,7 +70,7 @@ contract FundingPanel is Ownable, IFundingPanel {
 
         factoryDeployIndex = _deployIndex;
 
-        uint256 multiplier = 10 ** 18;
+        uint256 multiplier = 10 ** 18;  // to be removed
         seedMaxSupply = _seedMaxSupply.mul(multiplier);
 
         tokenAddress = _tokenAddress;
