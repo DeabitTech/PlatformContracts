@@ -483,25 +483,61 @@ contract Ownable {
 
 
 interface IAdminTools {
-    function setWalletOnTopAddress(address _wallet) external returns(address);
-    function isFundingOperator(address) external view returns (bool);
-    function isFundsUnlockerOperator(address) external view returns (bool);
     function setFFPAddresses(address, address) external;
     function setMinterAddress(address) external returns(address);
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
+    function setWalletOnTopAddress(address) external returns(address);
+
+    function addWLManagers(address) external;
+    function removeWLManagers(address) external;
+    function isWLManager(address) external view returns (bool);
+    function addWLOperators(address) external;
+    function removeWLOperators(address) external;
+    function renounceWLManager() external;
+    function isWLOperator(address) external view returns (bool);
+    function renounceWLOperators() external;
+
+    function addFundingManagers(address) external;
+    function removeFundingManagers(address) external;
+    function isFundingManager(address) external view returns (bool);
+    function addFundingOperators(address) external;
+    function removeFundingOperators(address) external;
+    function renounceFundingManager() external;
+    function isFundingOperator(address) external view returns (bool);
+    function renounceFundingOperators() external;
+
+    function addFundsUnlockerManagers(address) external;
+    function removeFundsUnlockerManagers(address) external;
+    function isFundsUnlockerManager(address) external view returns (bool);
+    function addFundsUnlockerOperators(address) external;
+    function removeFundsUnlockerOperators(address) external;
+    function renounceFundsUnlockerManager() external;
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function renounceFundsUnlockerOperators() external;
+
     function isWhitelisted(address) external view returns(bool);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
-    function addWLManagers(address account) external;
-    function addFundingManagers(address account) external;
-    function addFundsUnlockerManagers(address account) external;
-    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external;
-    function removeWLManagers(address account) external;
+    function getWLLength() external view returns(uint256);
+    function setNewThreshold(uint256) external;
+    function changeMaxWLAmount(address, uint256) external;
+    function addToWhitelist(address, uint256) external;
+    function addToWhitelistMassive(address[] calldata, uint256[] calldata) external returns (bool);
+    function removeFromWhitelist(address, uint256) external;
 }
 
 
 interface IToken {
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+    function paused() external view returns (bool);
+    function pause() external;
+    function unpause() external;
+    function isImportedContract(address) external view returns (bool);
+    function getImportedContractRate(address) external view returns (uint256);
+    function setImportedContract(address, uint256) external;
     function checkTransferAllowed (address, address, uint256) external view returns (byte);
     function checkTransferFromAllowed (address, address, uint256) external view returns (byte);
     function checkMintAllowed (address, uint256) external pure returns (byte);
@@ -566,35 +602,35 @@ contract Token is IToken, ERC20, Ownable {
     /**
      * @return the name of the token.
      */
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
     /**
      * @return the symbol of the token.
      */
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
     /**
      * @return the number of decimals of the token.
      */
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return _decimals;
     }
 
     /**
      * @return true if the contract is paused, false otherwise.
      */
-    function paused() public view returns (bool) {
+    function paused() external view returns (bool) {
         return _paused;
     }
 
     /**
      * @dev called by the owner to pause, triggers stopped state
      */
-    function pause() public onlyOwner whenNotPaused {
+    function pause() external onlyOwner whenNotPaused {
         _paused = true;
         emit Paused(msg.sender);
     }
@@ -602,7 +638,7 @@ contract Token is IToken, ERC20, Ownable {
     /**
      * @dev called by the owner to unpause, returns to normal state
      */
-    function unpause() public onlyOwner whenPaused {
+    function unpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
     }
@@ -611,7 +647,7 @@ contract Token is IToken, ERC20, Ownable {
      * @dev check if the contract can be imported to change with this token.
      * @param _contract address of token to be imported
      */
-    function isImportedContract(address _contract) public view returns (bool) {
+    function isImportedContract(address _contract) external view returns (bool) {
         return contractsToImport[_contract].permission;
     }
 
@@ -619,7 +655,7 @@ contract Token is IToken, ERC20, Ownable {
      * @dev get the exchange rate between token to be imported and this token.
      * @param _contract address of token to be exchange
      */
-    function getImportedContractRate(address _contract) public view returns (uint256) {
+    function getImportedContractRate(address _contract) external view returns (uint256) {
         return contractsToImport[_contract].tokenRateExchange;
     }
 
@@ -628,7 +664,7 @@ contract Token is IToken, ERC20, Ownable {
      * @param _contract address of token to be imported
      * @param _exchRate exchange rate between token to be imported and this token.
      */
-    function setImportedContract(address _contract, uint256 _exchRate) public onlyOwner {
+    function setImportedContract(address _contract, uint256 _exchRate) external onlyOwner {
         require(_contract != address(0), "Address not allowed!");
         require(_exchRate >= 0, "Rate exchange not allowed!");
         contractsToImport[_contract].permission = true;
@@ -707,22 +743,21 @@ contract TDeployer is Ownable, ITDeployer {
     address private fAddress;
     event TokenDeployed(uint deployedBlock);
 
-    //constructor() public {}
 
     modifier onlyFactory() {
         require(msg.sender == fAddress, "Address not allowed to create T Contract!");
         _;
     }
 
-    function setFactoryAddress(address _fAddress) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function setFactoryAddress(address _fAddress) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }
 
-    function getFactoryAddress() public view returns(address) {
+    function getFactoryAddress() external view returns(address) {
         return fAddress;
     }
 
@@ -734,7 +769,7 @@ contract TDeployer is Ownable, ITDeployer {
      * @param _ATAddress address of the corresponding AT contract
      * @return address of the deployed Token contract
      */
-    function newToken(address _caller, string memory _name, string memory _symbol, address _ATAddress) public onlyFactory returns(address) {
+    function newToken(address _caller, string calldata _name, string calldata _symbol, address _ATAddress) external onlyFactory returns(address) {
         Token c = new Token(_name, _symbol, _ATAddress);
         c.transferOwnership(_caller);
         emit TokenDeployed(block.number);

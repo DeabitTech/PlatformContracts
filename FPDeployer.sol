@@ -182,21 +182,48 @@ contract Ownable {
 
 
 interface IAdminTools {
-    function setWalletOnTopAddress(address _wallet) external returns(address);
-    function isFundingOperator(address) external view returns (bool);
-    function isFundsUnlockerOperator(address) external view returns (bool);
     function setFFPAddresses(address, address) external;
     function setMinterAddress(address) external returns(address);
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
+    function setWalletOnTopAddress(address) external returns(address);
+
+    function addWLManagers(address) external;
+    function removeWLManagers(address) external;
+    function isWLManager(address) external view returns (bool);
+    function addWLOperators(address) external;
+    function removeWLOperators(address) external;
+    function renounceWLManager() external;
+    function isWLOperator(address) external view returns (bool);
+    function renounceWLOperators() external;
+
+    function addFundingManagers(address) external;
+    function removeFundingManagers(address) external;
+    function isFundingManager(address) external view returns (bool);
+    function addFundingOperators(address) external;
+    function removeFundingOperators(address) external;
+    function renounceFundingManager() external;
+    function isFundingOperator(address) external view returns (bool);
+    function renounceFundingOperators() external;
+
+    function addFundsUnlockerManagers(address) external;
+    function removeFundsUnlockerManagers(address) external;
+    function isFundsUnlockerManager(address) external view returns (bool);
+    function addFundsUnlockerOperators(address) external;
+    function removeFundsUnlockerOperators(address) external;
+    function renounceFundsUnlockerManager() external;
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function renounceFundsUnlockerOperators() external;
+
     function isWhitelisted(address) external view returns(bool);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
-    function addWLManagers(address account) external;
-    function addFundingManagers(address account) external;
-    function addFundsUnlockerManagers(address account) external;
-    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external;
-    function removeWLManagers(address account) external;
+    function getWLLength() external view returns(uint256);
+    function setNewThreshold(uint256) external;
+    function changeMaxWLAmount(address, uint256) external;
+    function addToWhitelist(address, uint256) external;
+    function addToWhitelistMassive(address[] calldata, uint256[] calldata) external returns (bool);
+    function removeFromWhitelist(address, uint256) external;
 }
 
 
@@ -502,6 +529,15 @@ contract ERC20 is IERC20 {
 
 
 interface IToken {
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+    function paused() external view returns (bool);
+    function pause() external;
+    function unpause() external;
+    function isImportedContract(address) external view returns (bool);
+    function getImportedContractRate(address) external view returns (uint256);
+    function setImportedContract(address, uint256) external;
     function checkTransferAllowed (address, address, uint256) external view returns (byte);
     function checkTransferFromAllowed (address, address, uint256) external view returns (byte);
     function checkMintAllowed (address, uint256) external pure returns (byte);
@@ -566,35 +602,35 @@ contract Token is IToken, ERC20, Ownable {
     /**
      * @return the name of the token.
      */
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
     /**
      * @return the symbol of the token.
      */
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
     /**
      * @return the number of decimals of the token.
      */
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return _decimals;
     }
 
     /**
      * @return true if the contract is paused, false otherwise.
      */
-    function paused() public view returns (bool) {
+    function paused() external view returns (bool) {
         return _paused;
     }
 
     /**
      * @dev called by the owner to pause, triggers stopped state
      */
-    function pause() public onlyOwner whenNotPaused {
+    function pause() external onlyOwner whenNotPaused {
         _paused = true;
         emit Paused(msg.sender);
     }
@@ -602,7 +638,7 @@ contract Token is IToken, ERC20, Ownable {
     /**
      * @dev called by the owner to unpause, returns to normal state
      */
-    function unpause() public onlyOwner whenPaused {
+    function unpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
     }
@@ -611,7 +647,7 @@ contract Token is IToken, ERC20, Ownable {
      * @dev check if the contract can be imported to change with this token.
      * @param _contract address of token to be imported
      */
-    function isImportedContract(address _contract) public view returns (bool) {
+    function isImportedContract(address _contract) external view returns (bool) {
         return contractsToImport[_contract].permission;
     }
 
@@ -619,7 +655,7 @@ contract Token is IToken, ERC20, Ownable {
      * @dev get the exchange rate between token to be imported and this token.
      * @param _contract address of token to be exchange
      */
-    function getImportedContractRate(address _contract) public view returns (uint256) {
+    function getImportedContractRate(address _contract) external view returns (uint256) {
         return contractsToImport[_contract].tokenRateExchange;
     }
 
@@ -628,7 +664,7 @@ contract Token is IToken, ERC20, Ownable {
      * @param _contract address of token to be imported
      * @param _exchRate exchange rate between token to be imported and this token.
      */
-    function setImportedContract(address _contract, uint256 _exchRate) public onlyOwner {
+    function setImportedContract(address _contract, uint256 _exchRate) external onlyOwner {
         require(_contract != address(0), "Address not allowed!");
         require(_exchRate >= 0, "Rate exchange not allowed!");
         contractsToImport[_contract].permission = true;
@@ -699,8 +735,24 @@ contract Token is IToken, ERC20, Ownable {
 interface IFundingPanel {
     function getFactoryDeployIndex() external view returns(uint);
     function isMemberInserted(address) external view returns(bool);
+    function addMemberToSet(address, uint8, string calldata, bytes32) external returns (bool);
+    function enableMember(address) external;
+    function disableMemberByStaffRetire(address) external;
+    function disableMemberByStaffForExit(address) external;
+    function disableMemberByMember(address) external;
+    function changeMemberData(address, string calldata, bytes32) external;
+    function changeTokenExchangeRate(uint256) external;
+    function changeTokenExchangeOnTopRate(uint256) external;
+    function getOwnerData() external view returns (string memory, bytes32);
+    function setOwnerData(string calldata, bytes32) external;
     function getMembersNumber() external view returns (uint);
     function getMemberAddressByIndex(uint8) external view returns (address);
+    function getMemberDataByAddress(address _memberWallet) external view returns (bool, uint8, string memory, bytes32, uint256, uint, uint256);
+    function setNewSeedMaxSupply(uint256) external returns (uint256);
+    function holderSendSeeds(uint256) external;
+    function unlockFunds(address, uint256) external;
+    function burnTokensForMember(address, uint256) external;
+    function importOtherTokens(address, uint256) external;
 }
 
 
@@ -740,6 +792,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     uint public factoryDeployIndex;
 
     uint256 public seedMaxSupply;
+    uint256 public totalSentSeed;
 
     struct infoMember {
         bool isInserted;
@@ -748,6 +801,7 @@ contract FundingPanel is Ownable, IFundingPanel {
         bytes32 memberHash;
         uint256 burnedTokens;
         uint listPointer;
+        uint256 memberUnlockedSeeds;
     }
     mapping(address => infoMember) public membersArray; // mapping of members
     address[] public membersList; //array for counting or accessing in a sequencialing way the members
@@ -777,13 +831,11 @@ contract FundingPanel is Ownable, IFundingPanel {
 
         exchangeRateSeed = _exchRateSeed;
         exchangeRateOnTop = _exchRateOnTop;
-        //exchRateDecimals = _exchRateDecim;
         exchRateDecimals = 18;
 
         factoryDeployIndex = _deployIndex;
 
-        uint256 multiplier = 10 ** 18;  // to be removed
-        seedMaxSupply = _seedMaxSupply.mul(multiplier);
+        seedMaxSupply = _seedMaxSupply;
 
         tokenAddress = _tokenAddress;
         ATAddress = _ATAddress;
@@ -827,7 +879,7 @@ contract FundingPanel is Ownable, IFundingPanel {
 
     /**
      * @dev get Factory Deploy Index
-     * @return uint8 index
+     * @return uint index
      */
     function getFactoryDeployIndex() public view returns(uint) {
         return factoryDeployIndex;
@@ -845,11 +897,11 @@ contract FundingPanel is Ownable, IFundingPanel {
      * @dev only operator members can add a member
      * @return bool for success
      */
-    function addMemberToSet(address memberWallet, uint8 disabled, string memory memberURL,
-                            bytes32 memberHash) public onlyFundingOperators returns (bool) {
+    function addMemberToSet(address memberWallet, uint8 disabled, string calldata memberURL,
+                            bytes32 memberHash) external onlyFundingOperators returns (bool) {
         require(!isMemberInserted(memberWallet), "Member already inserted!");
         uint memberPlace = membersList.push(memberWallet) - 1;
-        infoMember memory tmpStUp = infoMember(true, disabled, memberURL, memberHash, 0, memberPlace);
+        infoMember memory tmpStUp = infoMember(true, disabled, memberURL, memberHash, 0, memberPlace, 0);
         membersArray[memberWallet] = tmpStUp;
         emit MemberAdded();
         return true;
@@ -874,14 +926,14 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @return get the number of inserted members in the set
      */
-    function getMembersNumber() public view returns (uint) {
+    function getMembersNumber() external view returns (uint) {
         return membersList.length;
     }
 
     /**
      * @dev only operator memebers can enable a member
      */
-    function enableMember(address _memberAddress) public onlyFundingOperators {
+    function enableMember(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 0;
         emit MemberEnabled();
@@ -890,7 +942,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @dev operator members can disable an already inserted member
      */
-    function disableMemberByStaffRetire(address _memberAddress) public onlyFundingOperators {
+    function disableMemberByStaffRetire(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 2;
         emit MemberDisabled();
@@ -899,7 +951,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @dev operator members can disable an already inserted member
      */
-    function disableMemberByStaffForExit(address _memberAddress) public onlyFundingOperators {
+    function disableMemberByStaffForExit(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 1;
         emit MemberDisabled();
@@ -908,7 +960,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @dev member can disable itself if already inserted and enabled
      */
-    function disableMemberByMember(address _memberAddress) public onlyMemberEnabled {
+    function disableMemberByMember(address _memberAddress) external onlyMemberEnabled {
         membersArray[_memberAddress].disabled = 3;
         emit MemberDisabledByMember();
     }
@@ -916,7 +968,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @dev operator members can change URL and hash of an already inserted member
      */
-    function changeMemberData(address _memberAddress, string memory newURL, bytes32 newHash) public onlyFundingOperators {
+    function changeMemberData(address _memberAddress, string calldata newURL, bytes32 newHash) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].memberURL = newURL;
         membersArray[_memberAddress].memberHash = newHash;
@@ -965,21 +1017,21 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @return get the set token address
      */
-    function getTokenAddress() public view returns (address) {
+    function getTokenAddress() external view returns (address) {
         return tokenAddress;
     }
 
     /**
      * @return get the operator members URL and hash
      */
-    function getOwnerData() public view returns (string memory, bytes32) {
+    function getOwnerData() external view returns (string memory, bytes32) {
         return (setDocURL, setDocHash);
     }
 
     /**
      * @dev set the owner URL and hash
      */
-    function setOwnerData(string memory _dataURL, bytes32 _dataHash) public onlyOwner {
+    function setOwnerData(string calldata _dataURL, bytes32 _dataHash) external onlyOwner {
         setDocURL = _dataURL;
         setDocHash = _dataHash;
         emit OwnerDataHashChanged();
@@ -988,49 +1040,45 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @return get the operator members URL and hash
      */
-    function getMemberAddressByIndex(uint8 _index) public view returns (address) {
+    function getMemberAddressByIndex(uint8 _index) external view returns (address) {
         return membersList[_index];
     }
 
-    function getMemberDataByAddress(address _memberWallet) public view returns (bool, uint8, string memory, bytes32, uint256, uint) {
+    function getMemberDataByAddress(address _memberWallet) external view returns (bool, uint8, string memory, bytes32, uint256, uint, uint256) {
         require(membersArray[_memberWallet].isInserted, "Member not inserted");
         return(membersArray[_memberWallet].isInserted, membersArray[_memberWallet].disabled, membersArray[_memberWallet].memberURL,
-                membersArray[_memberWallet].memberHash, membersArray[_memberWallet].burnedTokens, membersArray[_memberWallet].listPointer); // mapping of members
+                membersArray[_memberWallet].memberHash, membersArray[_memberWallet].burnedTokens,
+                membersArray[_memberWallet].listPointer, membersArray[_memberWallet].memberUnlockedSeeds);
     }
 
     /**
      * @dev change the max Supply of SEED
      */
-    function setNewSeedMaxSupply(uint256 _newMaxSeedSupply) public onlyFundingOperators returns (uint256) {
+    function setNewSeedMaxSupply(uint256 _newMaxSeedSupply) external onlyFundingOperators returns (uint256) {
         seedMaxSupply = _newMaxSeedSupply;
         emit NewSeedMaxSupplyChanged();
         return seedMaxSupply;
     }
 
     /**
-     * @return get the number of Seed token inside the contract
-     */
-    function getTotalRaised() public view returns (uint256) {
-        return seedToken.balanceOf(address(this));
-    }
-
-    /**
      * @dev get the number of Seed token inside the contract an mint new tokens forthe holders and the wallet "On Top"
      * @notice msg.sender has to approve transfer the tokens BEFORE calling this function
      */
-    function holderSendSeeds(uint256 _seeds) public holderEnabledInSeeds(msg.sender, _seeds) {
+    function holderSendSeeds(uint256 _seeds) external holderEnabledInSeeds(msg.sender, _seeds) {
         require(seedToken.balanceOf(address(this)) + _seeds <= seedMaxSupply, "Maximum supply reached!");
         require(seedToken.balanceOf(msg.sender) >= _seeds, "Not enough seeds in holder wallet");
         address walletOnTop = ATContract.getWalletOnTopAddress();
         require(ATContract.isWhitelisted(walletOnTop), "Owner wallet not whitelisted");
         seedToken.transferFrom(msg.sender, address(this), _seeds);
+        totalSentSeed = totalSentSeed.add(_seeds);
 
         //apply conversion seed/set token
         uint256 amount = getTokenExchangeAmount(_seeds);
         token.mint(msg.sender, amount);
 
         uint256 amountOnTop = getTokenExchangeAmountOnTop(_seeds);
-        token.mint(walletOnTop, amountOnTop);
+        if (amountOnTop > 0)
+            token.mint(walletOnTop, amountOnTop);
         emit MintedToken(amount, amountOnTop);
     }
 
@@ -1040,15 +1088,15 @@ contract FundingPanel is Ownable, IFundingPanel {
     function unlockFunds(address memberWallet, uint256 amount) external onlyFundsUnlockerOperators {
          require(seedToken.balanceOf(address(this)) >= amount, "Not enough seeds to unlock!");
          require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
-
          seedToken.transfer(memberWallet, amount);
+         membersArray[memberWallet].memberUnlockedSeeds = membersArray[memberWallet].memberUnlockedSeeds.add(amount);
          emit FundsUnlocked();
     }
 
     /**
      * @dev Burn tokens for members
      */
-    function burnTokensForMember(address memberWallet, uint256 amount) public {
+    function burnTokensForMember(address memberWallet, uint256 amount) external {
          require(token.balanceOf(msg.sender) >= amount, "Not enough tokens to burn!");
          require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
          membersArray[memberWallet].burnedTokens = membersArray[memberWallet].burnedTokens.add(amount);
@@ -1061,7 +1109,7 @@ contract FundingPanel is Ownable, IFundingPanel {
      * @param _tokenAddress Token address to convert in this tokens
      * @param _tokenAmount Amount of old tokens to convert
      */
-    function importOtherTokens(address _tokenAddress, uint256 _tokenAmount) public onlyOwner {
+    function importOtherTokens(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
         require(token.isImportedContract(_tokenAddress), "Address not allowed!");
         require(token.getImportedContractRate(_tokenAddress) >= 0, "Rate exchange not allowed!");
         require(ATContract.isWhitelisted(msg.sender), "Wallet not whitelisted");
@@ -1100,8 +1148,8 @@ contract FPDeployer is Ownable, IFPDeployer {
      * @dev Set the factory address for deployment.
      * @param _fAddress The factory address.
      */
-    function setFactoryAddress(address _fAddress) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function setFactoryAddress(address _fAddress) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");
@@ -1111,7 +1159,7 @@ contract FPDeployer is Ownable, IFPDeployer {
     /**
      * @dev Get the factory address for deployment.
      */
-    function getFactoryAddress() public view returns(address) {
+    function getFactoryAddress() external view returns(address) {
         return fAddress;
     }
 
@@ -1129,8 +1177,8 @@ contract FPDeployer is Ownable, IFPDeployer {
      * @param newLength number of this contract in the corresponding array in the Factory contract
      * @return address of the deployed Token contract
      */
-    function newFundingPanel(address _caller, string memory _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
-                address _seedTokenAddress, uint256 _seedMaxSupply, address _tokenAddress, address _ATAddress, uint newLength) public onlyFactory returns(address) {
+    function newFundingPanel(address _caller, string calldata _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
+                address _seedTokenAddress, uint256 _seedMaxSupply, address _tokenAddress, address _ATAddress, uint newLength) external onlyFactory returns(address) {
         require(_caller != address(0), "Sender Address is zero");
         FundingPanel c = new FundingPanel(_setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop,
                                               _seedTokenAddress, _seedMaxSupply, _tokenAddress, _ATAddress, newLength);

@@ -197,21 +197,48 @@ interface IERC20Seed {
 
 
 interface IAdminTools {
-    function setWalletOnTopAddress(address _wallet) external returns(address);
-    function isFundingOperator(address) external view returns (bool);
-    function isFundsUnlockerOperator(address) external view returns (bool);
     function setFFPAddresses(address, address) external;
     function setMinterAddress(address) external returns(address);
     function getMinterAddress() external view returns(address);
     function getWalletOnTopAddress() external view returns (address);
+    function setWalletOnTopAddress(address) external returns(address);
+
+    function addWLManagers(address) external;
+    function removeWLManagers(address) external;
+    function isWLManager(address) external view returns (bool);
+    function addWLOperators(address) external;
+    function removeWLOperators(address) external;
+    function renounceWLManager() external;
+    function isWLOperator(address) external view returns (bool);
+    function renounceWLOperators() external;
+
+    function addFundingManagers(address) external;
+    function removeFundingManagers(address) external;
+    function isFundingManager(address) external view returns (bool);
+    function addFundingOperators(address) external;
+    function removeFundingOperators(address) external;
+    function renounceFundingManager() external;
+    function isFundingOperator(address) external view returns (bool);
+    function renounceFundingOperators() external;
+
+    function addFundsUnlockerManagers(address) external;
+    function removeFundsUnlockerManagers(address) external;
+    function isFundsUnlockerManager(address) external view returns (bool);
+    function addFundsUnlockerOperators(address) external;
+    function removeFundsUnlockerOperators(address) external;
+    function renounceFundsUnlockerManager() external;
+    function isFundsUnlockerOperator(address) external view returns (bool);
+    function renounceFundsUnlockerOperators() external;
+
     function isWhitelisted(address) external view returns(bool);
     function getWLThresholdBalance() external view returns (uint256);
     function getMaxWLAmount(address) external view returns(uint256);
-    function addWLManagers(address account) external;
-    function addFundingManagers(address account) external;
-    function addFundsUnlockerManagers(address account) external;
-    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external;
-    function removeWLManagers(address account) external;
+    function getWLLength() external view returns(uint256);
+    function setNewThreshold(uint256) external;
+    function changeMaxWLAmount(address, uint256) external;
+    function addToWhitelist(address, uint256) external;
+    function addToWhitelistMassive(address[] calldata, uint256[] calldata) external returns (bool);
+    function removeFromWhitelist(address, uint256) external;
 }
 
 
@@ -288,9 +315,9 @@ contract Factory is Ownable {
 
     address private internalDEXAddress;
 
+    uint private factoryDeployBlock;
+
     event NewPanelCreated(address, address, address, address, uint);
-    event TotalDeployFeesChanged();
-    event FeeCollectorChanged();
     event ATFactoryAddressChanged();
     event TFactoryAddressChanged();
     event FPFactoryAddressChanged();
@@ -305,14 +332,15 @@ contract Factory is Ownable {
         deployerT = ITDeployer(_TDAddress);
         FPDAddress = _FPDAddress;
         deployerFP = IFPDeployer(_FPDAddress);
+        factoryDeployBlock = block.number;
     }
 
     /**
      * @dev change AdminTols deployer address
      * @param _newATD new AT deployer address
      */
-    function changeATFactoryAddress(address _newATD) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function changeATFactoryAddress(address _newATD) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newATD != address(0), "Address not suitable!");
@@ -326,8 +354,8 @@ contract Factory is Ownable {
      * @dev change Token deployer address
      * @param _newTD new T deployer address
      */
-    function changeTDeployerAddress(address _newTD) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function changeTDeployerAddress(address _newTD) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/ Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newTD != address(0), "Address not suitable!");
@@ -341,8 +369,8 @@ contract Factory is Ownable {
      * @dev change Funding Panel deployer address
      * @param _newFPD new FP deployer address
      */
-    function changeFPDeployerAddress(address _newFPD) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function changeFPDeployerAddress(address _newFPD) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_newFPD != address(0), "Address not suitable!");
@@ -356,8 +384,8 @@ contract Factory is Ownable {
      * @dev set internal DEX address
      * @param _dexAddress internal DEX address
      */
-    function setInternalDEXAddress(address _dexAddress) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function setInternalDEXAddress(address _dexAddress) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_dexAddress != address(0), "Address not suitable!");
@@ -410,7 +438,7 @@ contract Factory is Ownable {
         ATBrandNew.addFundsUnlockerManagers(sender);
         ATBrandNew.setWalletOnTopAddress(sender);
 
-        uint256 dexMaxAmnt = _exchRateSeed.mul(300000000);  //Seed Max supply
+        uint256 dexMaxAmnt = _exchRateSeed.mul(300000000);  //Seed total supply
         ATBrandNew.addToWhitelist(internalDEXAddress, dexMaxAmnt);
 
         uint256 onTopMaxAmnt = _seedMaxSupply.mul(_exchRateSeed);
@@ -425,101 +453,80 @@ contract Factory is Ownable {
     }
 
     /**
-     * @dev get internal DEX address
-     */
-    function getInternalDEXAddress() public view returns(address) {
-        return internalDEXAddress;
-    }
-
-    /**
      * @dev get deployers number
      */
-    function getTotalDeployer() public view returns(uint256) {
+    function getTotalDeployer() external view returns(uint256) {
         return deployerList.length;
     }
 
     /**
      * @dev get AT contracts number
      */
-    function getTotalATContracts() public view returns(uint256) {
+    function getTotalATContracts() external view returns(uint256) {
         return ATContractsList.length;
     }
 
     /**
      * @dev get T contracts number
      */
-    function getTotalTContracts() public view returns(uint256) {
+    function getTotalTContracts() external view returns(uint256) {
         return TContractsList.length;
     }
 
     /**
      * @dev get FP contracts number
      */
-    function getTotalFPContracts() public view returns(uint256) {
+    function getTotalFPContracts() external view returns(uint256) {
         return FPContractsList.length;
     }
 
     /**
      * @dev get if address is a deployer
      */
-    function isFactoryDeployer(address _addr) public view returns(bool) {
+    function isFactoryDeployer(address _addr) external view returns(bool) {
         return deployers[_addr];
     }
 
     /**
      * @dev get if address is an AT contract generated by factory
      */
-    function isFactoryATGenerated(address _addr) public view returns(bool) {
+    function isFactoryATGenerated(address _addr) external view returns(bool) {
         return ATContracts[_addr];
     }
 
     /**
      * @dev get if address is a T contract generated by factory
      */
-    function isFactoryTGenerated(address _addr) public view returns(bool) {
+    function isFactoryTGenerated(address _addr) external view returns(bool) {
         return TContracts[_addr];
     }
 
     /**
      * @dev get if address is a T contract generated by factory
      */
-    function isFactoryFPGenerated(address _addr) public view returns(bool) {
+    function isFactoryFPGenerated(address _addr) external view returns(bool) {
         return FPContracts[_addr];
     }
 
     /**
      * @dev get the i-th element in every array
      */
-    function getContractsByIndex(uint256 _index) public view returns (address, address, address, address) {
+    function getContractsByIndex(uint256 _index) external view returns (address, address, address, address) {
         return(deployerList[_index], ATContractsList[_index], TContractsList[_index], FPContractsList[_index]);
-    }
-
-    /**
-     * @dev get the i-th element in deployer array
-     */
-    function getDeployerAddressByIndex(uint256 _index) public view returns (address) {
-        return deployerList[_index];
-    }
-
-    /**
-     * @dev get the i-th element in ATContractsList array
-     */
-    function getATAddressByIndex(uint256 _index) public view returns (address) {
-        return ATContractsList[_index];
-    }
-
-    /**
-     * @dev get the i-th element in TContractsList array
-     */
-    function getTAddressByIndex(uint256 _index) public view returns (address) {
-        return TContractsList[_index];
     }
 
     /**
      * @dev get the i-th element in FPContractsList array
      */
-    function getFPAddressByIndex(uint256 _index) public view returns (address) {
+    function getFPAddressByIndex(uint256 _index) external view returns (address) {
         return FPContractsList[_index];
+    }
+
+    /**
+     * @dev get the i-th element in FPContractsList array
+     */
+    function getFactoryContext() external view returns (address, address, uint) {
+        return (seedAddress, internalDEXAddress, factoryDeployBlock);
     }
 
     /**
