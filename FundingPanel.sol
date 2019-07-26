@@ -1,4 +1,4 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.2;
 
 import "./lib/SafeMath.sol";
 import "./lib/Ownable.sol";
@@ -28,6 +28,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     uint public factoryDeployIndex;
 
     uint256 public seedMaxSupply;
+    uint256 public totalSentSeed;
 
     struct infoMember {
         bool isInserted;
@@ -36,6 +37,7 @@ contract FundingPanel is Ownable, IFundingPanel {
         bytes32 memberHash;
         uint256 burnedTokens;
         uint listPointer;
+        uint256 memberUnlockedSeeds;
     }
     mapping(address => infoMember) public membersArray; // mapping of members
     address[] public membersList; //array for counting or accessing in a sequencialing way the members
@@ -65,13 +67,11 @@ contract FundingPanel is Ownable, IFundingPanel {
 
         exchangeRateSeed = _exchRateSeed;
         exchangeRateOnTop = _exchRateOnTop;
-        //exchRateDecimals = _exchRateDecim;
         exchRateDecimals = 18;
 
         factoryDeployIndex = _deployIndex;
 
-        uint256 multiplier = 10 ** 18;  // to be removed
-        seedMaxSupply = _seedMaxSupply.mul(multiplier);
+        seedMaxSupply = _seedMaxSupply;
 
         tokenAddress = _tokenAddress;
         ATAddress = _ATAddress;
@@ -115,7 +115,7 @@ contract FundingPanel is Ownable, IFundingPanel {
 
     /**
      * @dev get Factory Deploy Index
-     * @return uint8 index
+     * @return uint index
      */
     function getFactoryDeployIndex() public view returns(uint) {
         return factoryDeployIndex;
@@ -133,11 +133,11 @@ contract FundingPanel is Ownable, IFundingPanel {
      * @dev only operator members can add a member
      * @return bool for success
      */
-    function addMemberToSet(address memberWallet, uint8 disabled, string memory memberURL,
-                            bytes32 memberHash) public onlyFundingOperators returns (bool) {
+    function addMemberToSet(address memberWallet, uint8 disabled, string calldata memberURL,
+                            bytes32 memberHash) external onlyFundingOperators returns (bool) {
         require(!isMemberInserted(memberWallet), "Member already inserted!");
         uint memberPlace = membersList.push(memberWallet) - 1;
-        infoMember memory tmpStUp = infoMember(true, disabled, memberURL, memberHash, 0, memberPlace);
+        infoMember memory tmpStUp = infoMember(true, disabled, memberURL, memberHash, 0, memberPlace, 0);
         membersArray[memberWallet] = tmpStUp;
         emit MemberAdded();
         return true;
@@ -162,14 +162,14 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @return get the number of inserted members in the set
      */
-    function getMembersNumber() public view returns (uint) {
+    function getMembersNumber() external view returns (uint) {
         return membersList.length;
     }
 
     /**
      * @dev only operator memebers can enable a member
      */
-    function enableMember(address _memberAddress) public onlyFundingOperators {
+    function enableMember(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 0;
         emit MemberEnabled();
@@ -178,7 +178,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @dev operator members can disable an already inserted member
      */
-    function disableMemberByStaffRetire(address _memberAddress) public onlyFundingOperators {
+    function disableMemberByStaffRetire(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 2;
         emit MemberDisabled();
@@ -187,7 +187,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @dev operator members can disable an already inserted member
      */
-    function disableMemberByStaffForExit(address _memberAddress) public onlyFundingOperators {
+    function disableMemberByStaffForExit(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 1;
         emit MemberDisabled();
@@ -196,7 +196,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @dev member can disable itself if already inserted and enabled
      */
-    function disableMemberByMember(address _memberAddress) public onlyMemberEnabled {
+    function disableMemberByMember(address _memberAddress) external onlyMemberEnabled {
         membersArray[_memberAddress].disabled = 3;
         emit MemberDisabledByMember();
     }
@@ -204,7 +204,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @dev operator members can change URL and hash of an already inserted member
      */
-    function changeMemberData(address _memberAddress, string memory newURL, bytes32 newHash) public onlyFundingOperators {
+    function changeMemberData(address _memberAddress, string calldata newURL, bytes32 newHash) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].memberURL = newURL;
         membersArray[_memberAddress].memberHash = newHash;
@@ -253,21 +253,21 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @return get the set token address
      */
-    function getTokenAddress() public view returns (address) {
+    function getTokenAddress() external view returns (address) {
         return tokenAddress;
     }
 
     /**
      * @return get the operator members URL and hash
      */
-    function getOwnerData() public view returns (string memory, bytes32) {
+    function getOwnerData() external view returns (string memory, bytes32) {
         return (setDocURL, setDocHash);
     }
 
     /**
      * @dev set the owner URL and hash
      */
-    function setOwnerData(string memory _dataURL, bytes32 _dataHash) public onlyOwner {
+    function setOwnerData(string calldata _dataURL, bytes32 _dataHash) external onlyOwner {
         setDocURL = _dataURL;
         setDocHash = _dataHash;
         emit OwnerDataHashChanged();
@@ -276,49 +276,45 @@ contract FundingPanel is Ownable, IFundingPanel {
     /**
      * @return get the operator members URL and hash
      */
-    function getMemberAddressByIndex(uint8 _index) public view returns (address) {
+    function getMemberAddressByIndex(uint8 _index) external view returns (address) {
         return membersList[_index];
     }
 
-    function getMemberDataByAddress(address _memberWallet) public view returns (bool, uint8, string memory, bytes32, uint256, uint) {
+    function getMemberDataByAddress(address _memberWallet) external view returns (bool, uint8, string memory, bytes32, uint256, uint, uint256) {
         require(membersArray[_memberWallet].isInserted, "Member not inserted");
         return(membersArray[_memberWallet].isInserted, membersArray[_memberWallet].disabled, membersArray[_memberWallet].memberURL,
-                membersArray[_memberWallet].memberHash, membersArray[_memberWallet].burnedTokens, membersArray[_memberWallet].listPointer); // mapping of members
+                membersArray[_memberWallet].memberHash, membersArray[_memberWallet].burnedTokens,
+                membersArray[_memberWallet].listPointer, membersArray[_memberWallet].memberUnlockedSeeds);
     }
 
     /**
      * @dev change the max Supply of SEED
      */
-    function setNewSeedMaxSupply(uint256 _newMaxSeedSupply) public onlyFundingOperators returns (uint256) {
+    function setNewSeedMaxSupply(uint256 _newMaxSeedSupply) external onlyFundingOperators returns (uint256) {
         seedMaxSupply = _newMaxSeedSupply;
         emit NewSeedMaxSupplyChanged();
         return seedMaxSupply;
     }
 
     /**
-     * @return get the number of Seed token inside the contract
-     */
-    function getTotalRaised() public view returns (uint256) {
-        return seedToken.balanceOf(address(this));
-    }
-
-    /**
      * @dev get the number of Seed token inside the contract an mint new tokens forthe holders and the wallet "On Top"
      * @notice msg.sender has to approve transfer the tokens BEFORE calling this function
      */
-    function holderSendSeeds(uint256 _seeds) public holderEnabledInSeeds(msg.sender, _seeds) {
+    function holderSendSeeds(uint256 _seeds) external holderEnabledInSeeds(msg.sender, _seeds) {
         require(seedToken.balanceOf(address(this)) + _seeds <= seedMaxSupply, "Maximum supply reached!");
         require(seedToken.balanceOf(msg.sender) >= _seeds, "Not enough seeds in holder wallet");
         address walletOnTop = ATContract.getWalletOnTopAddress();
         require(ATContract.isWhitelisted(walletOnTop), "Owner wallet not whitelisted");
         seedToken.transferFrom(msg.sender, address(this), _seeds);
+        totalSentSeed = totalSentSeed.add(_seeds);
 
         //apply conversion seed/set token
         uint256 amount = getTokenExchangeAmount(_seeds);
         token.mint(msg.sender, amount);
 
         uint256 amountOnTop = getTokenExchangeAmountOnTop(_seeds);
-        token.mint(walletOnTop, amountOnTop);
+        if (amountOnTop > 0)
+            token.mint(walletOnTop, amountOnTop);
         emit MintedToken(amount, amountOnTop);
     }
 
@@ -328,15 +324,15 @@ contract FundingPanel is Ownable, IFundingPanel {
     function unlockFunds(address memberWallet, uint256 amount) external onlyFundsUnlockerOperators {
          require(seedToken.balanceOf(address(this)) >= amount, "Not enough seeds to unlock!");
          require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
-
          seedToken.transfer(memberWallet, amount);
+         membersArray[memberWallet].memberUnlockedSeeds = membersArray[memberWallet].memberUnlockedSeeds.add(amount);
          emit FundsUnlocked();
     }
 
     /**
      * @dev Burn tokens for members
      */
-    function burnTokensForMember(address memberWallet, uint256 amount) public {
+    function burnTokensForMember(address memberWallet, uint256 amount) external {
          require(token.balanceOf(msg.sender) >= amount, "Not enough tokens to burn!");
          require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
          membersArray[memberWallet].burnedTokens = membersArray[memberWallet].burnedTokens.add(amount);
@@ -349,7 +345,7 @@ contract FundingPanel is Ownable, IFundingPanel {
      * @param _tokenAddress Token address to convert in this tokens
      * @param _tokenAmount Amount of old tokens to convert
      */
-    function importOtherTokens(address _tokenAddress, uint256 _tokenAmount) public onlyOwner {
+    function importOtherTokens(address _tokenAddress, uint256 _tokenAmount) external onlyOwner {
         require(token.isImportedContract(_tokenAddress), "Address not allowed!");
         require(token.getImportedContractRate(_tokenAddress) >= 0, "Rate exchange not allowed!");
         require(ATContract.isWhitelisted(msg.sender), "Wallet not whitelisted");

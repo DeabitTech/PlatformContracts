@@ -1,4 +1,4 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.2;
 
 import "./Token.sol";
 import "./ITDeployer.sol";
@@ -7,22 +7,21 @@ contract TDeployer is Ownable, ITDeployer {
     address private fAddress;
     event TokenDeployed(uint deployedBlock);
 
-    //constructor() public {}
 
     modifier onlyFactory() {
         require(msg.sender == fAddress, "Address not allowed to create T Contract!");
         _;
     }
 
-    function setFactoryAddress(address _fAddress) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function setFactoryAddress(address _fAddress) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }
 
-    function getFactoryAddress() public view returns(address) {
+    function getFactoryAddress() external view returns(address) {
         return fAddress;
     }
 
@@ -34,7 +33,7 @@ contract TDeployer is Ownable, ITDeployer {
      * @param _ATAddress address of the corresponding AT contract
      * @return address of the deployed Token contract
      */
-    function newToken(address _caller, string memory _name, string memory _symbol, address _ATAddress) public onlyFactory returns(address) {
+    function newToken(address _caller, string calldata _name, string calldata _symbol, address _ATAddress) external onlyFactory returns(address) {
         Token c = new Token(_name, _symbol, _ATAddress);
         c.transferOwnership(_caller);
         emit TokenDeployed(block.number);

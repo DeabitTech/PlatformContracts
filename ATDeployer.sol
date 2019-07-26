@@ -1,4 +1,4 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.2;
 
 import "./IERC20Seed.sol";
 import "./AdminTools.sol";
@@ -20,8 +20,8 @@ contract ATDeployer is Ownable, IATDeployer {
      * @dev Set the factory address for deployment.
      * @param _fAddress The factory address.
      */
-    function setFactoryAddress(address _fAddress) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function setFactoryAddress(address _fAddress) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");
@@ -31,7 +31,7 @@ contract ATDeployer is Ownable, IATDeployer {
     /**
      * @dev Get the factory address for deployment.
      */
-    function getFactoryAddress() public view returns(address) {
+    function getFactoryAddress() external view returns(address) {
         return fAddress;
     }
 
@@ -39,7 +39,7 @@ contract ATDeployer is Ownable, IATDeployer {
      * @dev deployment of a new AdminTools contract
      * @return address of the deployed AdminTools contract
      */
-    function newAdminTools(uint256 _whitelistThresholdBalance) public onlyFactory returns(address) {
+    function newAdminTools(uint256 _whitelistThresholdBalance) external onlyFactory returns(address) {
         AdminTools c = new AdminTools(_whitelistThresholdBalance);
         c.transferOwnership(msg.sender);
         emit ATDeployed (block.number);

@@ -5,7 +5,6 @@ interface IFactory {
     function changeTDeployerAddress(address) external;
     function changeFPDeployerAddress(address) external;
     function deployPanelContracts(string calldata, string calldata, string calldata, bytes32, uint8, uint8, uint256, uint256) external;
-    function getTotalDeployFees() external view returns (uint256);
     function isFactoryDeployer(address) external view returns(bool);
     function isFactoryATGenerated(address) external view returns(bool);
     function isFactoryTGenerated(address) external view returns(bool);
@@ -15,9 +14,7 @@ interface IFactory {
     function getTotalTContracts() external view returns(uint256);
     function getTotalFPContracts() external view returns(uint256);
     function getContractsByIndex(uint256) external view returns (address, address, address, address);
-    function getDeployerAddressByIndex(uint256) external view returns (address);
-    function getATAddressByIndex(uint256) external view returns (address);
-    function getTAddressByIndex(uint256) external view returns (address);
     function getFPAddressByIndex(uint256) external view returns (address);
+    function getFactoryContext() external view returns (address, address, uint);
     function withdraw(address) external;
 }

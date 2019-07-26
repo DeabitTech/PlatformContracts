@@ -1,4 +1,4 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.2;
 
 import "./FundingPanel.sol";
 import "./IFPDeployer.sol";
@@ -20,8 +20,8 @@ contract FPDeployer is Ownable, IFPDeployer {
      * @dev Set the factory address for deployment.
      * @param _fAddress The factory address.
      */
-    function setFactoryAddress(address _fAddress) public onlyOwner {
-        require(block.number < 6023000, "Time expired!");  //ropsten (Jul 20)
+    function setFactoryAddress(address _fAddress) external onlyOwner {
+        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
         //require(block.number < 9500000, "Time expired!");  //mainnet
         //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
         require(_fAddress != address(0), "Address not allowed");
@@ -31,7 +31,7 @@ contract FPDeployer is Ownable, IFPDeployer {
     /**
      * @dev Get the factory address for deployment.
      */
-    function getFactoryAddress() public view returns(address) {
+    function getFactoryAddress() external view returns(address) {
         return fAddress;
     }
 
@@ -49,8 +49,8 @@ contract FPDeployer is Ownable, IFPDeployer {
      * @param newLength number of this contract in the corresponding array in the Factory contract
      * @return address of the deployed Token contract
      */
-    function newFundingPanel(address _caller, string memory _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
-                address _seedTokenAddress, uint256 _seedMaxSupply, address _tokenAddress, address _ATAddress, uint newLength) public onlyFactory returns(address) {
+    function newFundingPanel(address _caller, string calldata _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
+                address _seedTokenAddress, uint256 _seedMaxSupply, address _tokenAddress, address _ATAddress, uint newLength) external onlyFactory returns(address) {
         require(_caller != address(0), "Sender Address is zero");
         FundingPanel c = new FundingPanel(_setDocURL, _setDocHash, _exchRateSeed, _exchRateOnTop,
                                               _seedTokenAddress, _seedMaxSupply, _tokenAddress, _ATAddress, newLength);

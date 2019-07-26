@@ -1,4 +1,4 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.2;
 
 import "./lib/ERC20.sol";
 import "./lib/Ownable.sol";
@@ -62,35 +62,35 @@ contract Token is IToken, ERC20, Ownable {
     /**
      * @return the name of the token.
      */
-    function name() public view returns (string memory) {
+    function name() external view returns (string memory) {
         return _name;
     }
 
     /**
      * @return the symbol of the token.
      */
-    function symbol() public view returns (string memory) {
+    function symbol() external view returns (string memory) {
         return _symbol;
     }
 
     /**
      * @return the number of decimals of the token.
      */
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         return _decimals;
     }
 
     /**
      * @return true if the contract is paused, false otherwise.
      */
-    function paused() public view returns (bool) {
+    function paused() external view returns (bool) {
         return _paused;
     }
 
     /**
      * @dev called by the owner to pause, triggers stopped state
      */
-    function pause() public onlyOwner whenNotPaused {
+    function pause() external onlyOwner whenNotPaused {
         _paused = true;
         emit Paused(msg.sender);
     }
@@ -98,7 +98,7 @@ contract Token is IToken, ERC20, Ownable {
     /**
      * @dev called by the owner to unpause, returns to normal state
      */
-    function unpause() public onlyOwner whenPaused {
+    function unpause() external onlyOwner whenPaused {
         _paused = false;
         emit Unpaused(msg.sender);
     }
@@ -107,7 +107,7 @@ contract Token is IToken, ERC20, Ownable {
      * @dev check if the contract can be imported to change with this token.
      * @param _contract address of token to be imported
      */
-    function isImportedContract(address _contract) public view returns (bool) {
+    function isImportedContract(address _contract) external view returns (bool) {
         return contractsToImport[_contract].permission;
     }
 
@@ -115,7 +115,7 @@ contract Token is IToken, ERC20, Ownable {
      * @dev get the exchange rate between token to be imported and this token.
      * @param _contract address of token to be exchange
      */
-    function getImportedContractRate(address _contract) public view returns (uint256) {
+    function getImportedContractRate(address _contract) external view returns (uint256) {
         return contractsToImport[_contract].tokenRateExchange;
     }
 
@@ -124,7 +124,7 @@ contract Token is IToken, ERC20, Ownable {
      * @param _contract address of token to be imported
      * @param _exchRate exchange rate between token to be imported and this token.
      */
-    function setImportedContract(address _contract, uint256 _exchRate) public onlyOwner {
+    function setImportedContract(address _contract, uint256 _exchRate) external onlyOwner {
         require(_contract != address(0), "Address not allowed!");
         require(_exchRate >= 0, "Rate exchange not allowed!");
         contractsToImport[_contract].permission = true;

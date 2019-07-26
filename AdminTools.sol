@@ -1,4 +1,4 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.2;
 
 import "./lib/SafeMath.sol";
 import "./lib/Ownable.sol";
@@ -58,10 +58,10 @@ contract AdminTools is Ownable, IAdminTools {
     event LogWLAddressRemoved();
 
     constructor (uint256 _whitelistThresholdBalance) public {
-        whitelistThresholdBalance = _whitelistThresholdBalance.mul(10**18);
+        whitelistThresholdBalance = _whitelistThresholdBalance; //.mul(10**18);
     }
 
-    function setFFPAddresses(address _factoryAddress, address _FPAddress) public onlyOwner {
+    function setFFPAddresses(address _factoryAddress, address _FPAddress) external onlyOwner {
         FAddress = _factoryAddress;
         FContract = IFactory(FAddress);
         FPAddress = _FPAddress;
@@ -70,11 +70,11 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     /* Token Minter address, to set like Funding Panel address */
-    function getMinterAddress() public view returns(address) {
+    function getMinterAddress() external view returns(address) {
         return _minterAddress;
     }
 
-    function setMinterAddress(address _minter) public onlyOwner returns(address) {
+    function setMinterAddress(address _minter) external onlyOwner returns(address) {
         require(_minter != address(0), "Not valid minter address!");
         require(_minter != _minterAddress, " No change in minter contract");
         require(FAddress != address(0), "Not valid factory address!");
@@ -87,11 +87,11 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     /* Wallet receiving extra minted tokens (percentage) */
-    function getWalletOnTopAddress() public view returns (address) {
+    function getWalletOnTopAddress() external view returns (address) {
         return _walletOnTopAddress;
     }
 
-    function setWalletOnTopAddress(address _wallet) public onlyOwner returns(address) {
+    function setWalletOnTopAddress(address _wallet) external onlyOwner returns(address) {
         require(_wallet != address(0), "Not valid wallet address!");
         require(_wallet != _walletOnTopAddress, " No change in OnTopWallet");
         _walletOnTopAddress = _wallet;
@@ -133,12 +133,12 @@ contract AdminTools is Ownable, IAdminTools {
 
 
     /*   WL Roles Mngmt  */
-    function addWLManagers(address account) public onlyOwner {
+    function addWLManagers(address account) external onlyOwner {
         _addWLManagers(account);
         _addWLOperators(account);
     }
 
-    function removeWLManagers(address account) public onlyOwner {
+    function removeWLManagers(address account) external onlyOwner {
         _removeWLManagers(account);
         _removeWLManagers(account);
     }
@@ -147,15 +147,15 @@ contract AdminTools is Ownable, IAdminTools {
         return _WLManagers[account];
     }
 
-    function addWLOperators(address account) public onlyWLManagers {
+    function addWLOperators(address account) external onlyWLManagers {
         _addWLOperators(account);
     }
 
-    function removeWLOperators(address account) public onlyWLManagers {
+    function removeWLOperators(address account) external onlyWLManagers {
         _addWLOperators(account);
     }
 
-    function renounceWLManager() public onlyWLManagers {
+    function renounceWLManager() external onlyWLManagers {
         _removeWLManagers(msg.sender);
     }
 
@@ -174,7 +174,7 @@ contract AdminTools is Ownable, IAdminTools {
         return _WLOperators[account];
     }
 
-    function renounceWLOperators() public onlyWLOperators {
+    function renounceWLOperators() external onlyWLOperators {
         _removeWLOperators(msg.sender);
     }
 
@@ -190,12 +190,12 @@ contract AdminTools is Ownable, IAdminTools {
 
 
     /*   Funding Roles Mngmt  */
-    function addFundingManagers(address account) public onlyOwner {
+    function addFundingManagers(address account) external onlyOwner {
         _addFundingManagers(account);
         _addFundingOperators(account);
     }
 
-    function removeFundingManagers(address account) public onlyOwner {
+    function removeFundingManagers(address account) external onlyOwner {
         _removeFundingManagers(account);
         _removeFundingManagers(account);
     }
@@ -204,15 +204,15 @@ contract AdminTools is Ownable, IAdminTools {
         return _FundingManagers[account];
     }
 
-    function addFundingOperators(address account) public onlyFundingManagers {
+    function addFundingOperators(address account) external onlyFundingManagers {
         _addFundingOperators(account);
     }
 
-    function removeFundingOperators(address account) public onlyFundingManagers {
+    function removeFundingOperators(address account) external onlyFundingManagers {
         _addFundingOperators(account);
     }
 
-    function renounceFundingManager() public onlyFundingManagers {
+    function renounceFundingManager() external onlyFundingManagers {
         _removeFundingManagers(msg.sender);
     }
 
@@ -231,7 +231,7 @@ contract AdminTools is Ownable, IAdminTools {
         return _FundingOperators[account];
     }
 
-    function renounceFundingOperators() public onlyFundingOperators {
+    function renounceFundingOperators() external onlyFundingOperators {
         _removeFundingOperators(msg.sender);
     }
 
@@ -246,12 +246,12 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     /*   Funds Unlockers Roles Mngmt  */
-    function addFundsUnlockerManagers(address account) public onlyOwner {
+    function addFundsUnlockerManagers(address account) external onlyOwner {
         _addFundsUnlockerManagers(account);
         _addFundsUnlockerOperators(account);
     }
 
-    function removeFundsUnlockerManagers(address account) public onlyOwner {
+    function removeFundsUnlockerManagers(address account) external onlyOwner {
         _removeFundsUnlockerManagers(account);
         _removeFundsUnlockerManagers(account);
     }
@@ -260,15 +260,15 @@ contract AdminTools is Ownable, IAdminTools {
         return _FundsUnlockerManagers[account];
     }
 
-    function addFundsUnlockerOperators(address account) public onlyFundsUnlockerManagers {
+    function addFundsUnlockerOperators(address account) external onlyFundsUnlockerManagers {
         _addFundsUnlockerOperators(account);
     }
 
-    function removeFundsUnlockerOperators(address account) public onlyFundsUnlockerManagers {
+    function removeFundsUnlockerOperators(address account) external onlyFundsUnlockerManagers {
         _addFundsUnlockerOperators(account);
     }
 
-    function renounceFundsUnlockerManager() public onlyFundsUnlockerManagers {
+    function renounceFundsUnlockerManager() external onlyFundsUnlockerManagers {
         _removeFundsUnlockerManagers(msg.sender);
     }
 
@@ -282,12 +282,11 @@ contract AdminTools is Ownable, IAdminTools {
         emit FundsUnlockerManagersRemoved();
     }
 
-
     function isFundsUnlockerOperator(address account) public view returns (bool) {
         return _FundsUnlockerOperators[account];
     }
 
-    function renounceFundsUnlockerOperators() public onlyFundsUnlockerOperators {
+    function renounceFundsUnlockerOperators() external onlyFundsUnlockerOperators {
         _removeFundsUnlockerOperators(msg.sender);
     }
 
@@ -321,14 +320,14 @@ contract AdminTools is Ownable, IAdminTools {
     /**
      * @return maxAmount for holder
      */
-    function getMaxWLAmount(address _subscriber) public view returns(uint256) {
+    function getMaxWLAmount(address _subscriber) external view returns(uint256) {
         return whitelist[_subscriber].maxAmount;
     }
 
     /**
      * @dev length of the whitelisted accounts
      */
-    function getWLLength() public view returns(uint256) {
+    function getWLLength() external view returns(uint256) {
         return whitelistLength;
     }
 
@@ -336,9 +335,8 @@ contract AdminTools is Ownable, IAdminTools {
      * @dev set new anonymous threshold
      * @param _newThreshold The new anonymous threshold.
      */
-    function setNewThreshold(uint256 _newThreshold) public onlyWLManagers {
+    function setNewThreshold(uint256 _newThreshold) external onlyWLManagers {
         require(whitelistThresholdBalance != _newThreshold, "New Threshold like the old one!");
-        //require(_newThreshold != getWLThresholdBalance(), "NewMax equal to old MaxAmount");
         whitelistThresholdBalance = _newThreshold;
         emit LogWLThresholdBalanceChanged();
     }
@@ -348,7 +346,7 @@ contract AdminTools is Ownable, IAdminTools {
      * @param _subscriber The subscriber in the whitelist.
      * @param _newMaxToken New max amount that a subscriber can hold (in set tokens).
      */
-    function changeMaxWLAmount(address _subscriber, uint256 _newMaxToken) public onlyWLOperators {
+    function changeMaxWLAmount(address _subscriber, uint256 _newMaxToken) external onlyWLOperators {
         require(isWhitelisted(_subscriber), "Investor is not whitelisted!");
         whitelist[_subscriber].maxAmount = _newMaxToken;
         emit MaxWLAmountChanged();
@@ -359,7 +357,7 @@ contract AdminTools is Ownable, IAdminTools {
      * @param _subscriber The subscriber to add to the whitelist.
      * @param _maxAmnt max amount that a subscriber can hold (in set tokens).
      */
-    function addToWhitelist(address _subscriber, uint256 _maxAmnt) public onlyWLOperators {
+    function addToWhitelist(address _subscriber, uint256 _maxAmnt) external onlyWLOperators {
         require(_subscriber != address(0), "_subscriber is zero");
         require(!whitelist[_subscriber].permitted, "already whitelisted");
 
@@ -376,7 +374,7 @@ contract AdminTools is Ownable, IAdminTools {
      * @param _subscriber The subscriber list to add to the whitelist.
      * @param _maxAmnt max amount list that a subscriber can hold (in set tokens).
      */
-    function addToWhitelistMassive(address[] memory _subscriber, uint256[] memory _maxAmnt) public onlyWLOperators returns (bool _success) {
+    function addToWhitelistMassive(address[] calldata _subscriber, uint256[] calldata _maxAmnt) external onlyWLOperators returns (bool _success) {
         assert(_subscriber.length == _maxAmnt.length);
         assert(_subscriber.length <= 100);
 
@@ -399,7 +397,7 @@ contract AdminTools is Ownable, IAdminTools {
      * @param _subscriber The subscriber remove from the whitelist.
      * @param _balance balance of a subscriber to be under the anonymous threshold, otherwise de-whilisting not permitted.
      */
-    function removeFromWhitelist(address _subscriber, uint256 _balance) public onlyWLOperators {
+    function removeFromWhitelist(address _subscriber, uint256 _balance) external onlyWLOperators {
         require(_subscriber != address(0), "_subscriber is zero");
         require(whitelist[_subscriber].permitted, "not whitelisted");
         require(_balance <= whitelistThresholdBalance, "balance greater than whitelist threshold");
