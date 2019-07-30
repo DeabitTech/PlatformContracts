@@ -441,7 +441,7 @@ contract Factory is Ownable {
         uint256 dexMaxAmnt = _exchRateSeed.mul(300000000);  //Seed total supply
         ATBrandNew.addToWhitelist(internalDEXAddress, dexMaxAmnt);
 
-        uint256 onTopMaxAmnt = _seedMaxSupply.mul(_exchRateSeed);
+        uint256 onTopMaxAmnt = _seedMaxSupply.mul(_exchRateSeed).div(10**18);
         ATBrandNew.addToWhitelist(sender, onTopMaxAmnt);
 
         ATBrandNew.removeWLManagers(address(this));

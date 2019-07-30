@@ -697,7 +697,7 @@ contract Token is IToken, ERC20, Ownable {
      * @param _amountToAdd amount of tokens to be added to sender balance.
      */
     function okToTransferTokens(address _holder, uint256 _amountToAdd) public view returns (bool){
-        uint256 holderBalanceToBe = balanceOf(_holder) + _amountToAdd;
+        uint256 holderBalanceToBe = balanceOf(_holder).add(_amountToAdd);
         bool okToTransfer = ATContract.isWhitelisted(_holder) && holderBalanceToBe <= ATContract.getMaxWLAmount(_holder) ? true :
                           holderBalanceToBe <= ATContract.getWLThresholdBalance() ? true : false;
         return okToTransfer;
@@ -860,7 +860,7 @@ contract FundingPanel is Ownable, IFundingPanel {
 
     modifier holderEnabledInSeeds(address _holder, uint256 _seedAmountToAdd) {
         uint256 amountInTokens = getTokenExchangeAmount(_seedAmountToAdd);
-        uint256 holderBalanceToBe = token.balanceOf(_holder) + amountInTokens;
+        uint256 holderBalanceToBe = token.balanceOf(_holder).add(amountInTokens);
         bool okToInvest = ATContract.isWhitelisted(_holder) && holderBalanceToBe <= ATContract.getMaxWLAmount(_holder) ? true :
                           holderBalanceToBe <= ATContract.getWLThresholdBalance() ? true : false;
         require(okToInvest, "Investor not allowed to perform operations!");
@@ -1065,7 +1065,7 @@ contract FundingPanel is Ownable, IFundingPanel {
      * @notice msg.sender has to approve transfer the tokens BEFORE calling this function
      */
     function holderSendSeeds(uint256 _seeds) external holderEnabledInSeeds(msg.sender, _seeds) {
-        require(seedToken.balanceOf(address(this)) + _seeds <= seedMaxSupply, "Maximum supply reached!");
+        require(seedToken.balanceOf(address(this)).add(_seeds) <= seedMaxSupply, "Maximum supply reached!");
         require(seedToken.balanceOf(msg.sender) >= _seeds, "Not enough seeds in holder wallet");
         address walletOnTop = ATContract.getWalletOnTopAddress();
         require(ATContract.isWhitelisted(walletOnTop), "Owner wallet not whitelisted");
@@ -1114,7 +1114,7 @@ contract FundingPanel is Ownable, IFundingPanel {
         require(token.getImportedContractRate(_tokenAddress) >= 0, "Rate exchange not allowed!");
         require(ATContract.isWhitelisted(msg.sender), "Wallet not whitelisted");
         uint256 newTokenAmount = _tokenAmount.mul(token.getImportedContractRate(_tokenAddress));
-        uint256 holderBalanceToBe = token.balanceOf(msg.sender) + newTokenAmount;
+        uint256 holderBalanceToBe = token.balanceOf(msg.sender).add(newTokenAmount);
         bool okToInvest = ATContract.isWhitelisted(msg.sender) && holderBalanceToBe <= ATContract.getMaxWLAmount(msg.sender) ? true :
                           holderBalanceToBe <= ATContract.getWLThresholdBalance() ? true : false;
         require(okToInvest, "Wallet Threshold too low");
