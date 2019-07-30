@@ -157,7 +157,7 @@ contract Token is IToken, ERC20, Ownable {
      * @param _amountToAdd amount of tokens to be added to sender balance.
      */
     function okToTransferTokens(address _holder, uint256 _amountToAdd) public view returns (bool){
-        uint256 holderBalanceToBe = balanceOf(_holder) + _amountToAdd;
+        uint256 holderBalanceToBe = balanceOf(_holder).add(_amountToAdd);
         bool okToTransfer = ATContract.isWhitelisted(_holder) && holderBalanceToBe <= ATContract.getMaxWLAmount(_holder) ? true :
                           holderBalanceToBe <= ATContract.getWLThresholdBalance() ? true : false;
         return okToTransfer;
