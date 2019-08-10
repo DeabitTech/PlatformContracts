@@ -1,19 +1,8 @@
+/**
+ * SEED Platform Generator ATDeployer
+ */
+
 pragma solidity ^0.5.2;
-
-
-interface IERC20Seed {
-    function name() external view returns (string memory);
-    function symbol() external view returns (string memory);
-    function decimals() external view returns (uint8);
-    function totalSupply() external view returns (uint256);
-    function balanceOf(address owner) external view returns (uint256);
-    function transfer(address to, uint256 value) external returns (bool);
-    function approve(address spender, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-    function allowance(address owner, address spender) external view returns (uint256);
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
 
 
 /**
@@ -258,7 +247,6 @@ interface IFactory {
     function getContractsByIndex(uint256) external view returns (address, address, address, address);
     function getFPAddressByIndex(uint256) external view returns (address);
     function getFactoryContext() external view returns (address, address, uint);
-    function withdraw(address) external;
 }
 
 
@@ -338,7 +326,7 @@ contract AdminTools is Ownable, IAdminTools {
     event LogWLAddressRemoved();
 
     constructor (uint256 _whitelistThresholdBalance) public {
-        whitelistThresholdBalance = _whitelistThresholdBalance; //.mul(10**18);
+        whitelistThresholdBalance = _whitelistThresholdBalance;
     }
 
     function setFFPAddresses(address _factoryAddress, address _FPAddress) external onlyOwner {
@@ -420,7 +408,6 @@ contract AdminTools is Ownable, IAdminTools {
 
     function removeWLManagers(address account) external onlyOwner {
         _removeWLManagers(account);
-        _removeWLManagers(account);
     }
 
     function isWLManager(address account) public view returns (bool) {
@@ -432,7 +419,7 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     function removeWLOperators(address account) external onlyWLManagers {
-        _addWLOperators(account);
+        _removeWLOperators(account);
     }
 
     function renounceWLManager() external onlyWLManagers {
@@ -477,7 +464,6 @@ contract AdminTools is Ownable, IAdminTools {
 
     function removeFundingManagers(address account) external onlyOwner {
         _removeFundingManagers(account);
-        _removeFundingManagers(account);
     }
 
     function isFundingManager(address account) public view returns (bool) {
@@ -489,7 +475,7 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     function removeFundingOperators(address account) external onlyFundingManagers {
-        _addFundingOperators(account);
+        _removeFundingOperators(account);
     }
 
     function renounceFundingManager() external onlyFundingManagers {
@@ -528,11 +514,9 @@ contract AdminTools is Ownable, IAdminTools {
     /*   Funds Unlockers Roles Mngmt  */
     function addFundsUnlockerManagers(address account) external onlyOwner {
         _addFundsUnlockerManagers(account);
-        _addFundsUnlockerOperators(account);
     }
 
     function removeFundsUnlockerManagers(address account) external onlyOwner {
-        _removeFundsUnlockerManagers(account);
         _removeFundsUnlockerManagers(account);
     }
 
@@ -545,7 +529,7 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     function removeFundsUnlockerOperators(address account) external onlyFundsUnlockerManagers {
-        _addFundsUnlockerOperators(account);
+        _removeFundsUnlockerOperators(account);
     }
 
     function renounceFundsUnlockerManager() external onlyFundsUnlockerManagers {
@@ -717,9 +701,7 @@ contract ATDeployer is Ownable, IATDeployer {
      * @param _fAddress The factory address.
      */
     function setFactoryAddress(address _fAddress) external onlyOwner {
-        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
-        //require(block.number < 9500000, "Time expired!");  //mainnet
-        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
+        require(block.number < 8850000, "Time expired!");
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }

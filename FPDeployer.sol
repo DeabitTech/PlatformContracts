@@ -1,3 +1,7 @@
+/**
+ * SEED Platform Generator FPDeployer
+ */
+
 pragma solidity ^0.5.2;
 
 
@@ -807,21 +811,19 @@ contract FundingPanel is Ownable, IFundingPanel {
     address[] public membersList; //array for counting or accessing in a sequencialing way the members
 
     event MemberAdded();
-    event MemberRemoved();
-    event MemberEnabled();
-    event MemberDisabled();
-    event MemberDisabledByMember();
-    event MemberURLChanged();
-    event MemberHashChanged();
+    //event MemberRemoved();
+    event MemberEnabled(uint pointer);
+    event MemberDisabled(uint pointer);
+    event MemberDisabledByMember(uint pointer);
+    event MemberDataChanged(uint pointer);
     event TokenExchangeRateChanged();
     event TokenExchangeOnTopRateChanged();
     event TokenExchangeDecimalsChanged();
-    event OwnerDataURLChanged();
-    event OwnerDataHashChanged();
+    event OwnerDataChanged();
     event NewSeedMaxSupplyChanged();
     event MintedToken(uint256 amount, uint256 amountOnTop);
     event FundsUnlocked();
-    event TokensBurnedForMember();
+    event TokensBurnedForMember(uint pointer);
     event MintedImportedToken(uint256 newTokenAmount);
 
     constructor (string memory _setDocURL, bytes32 _setDocHash, uint256 _exchRateSeed, uint256 _exchRateOnTop,
@@ -889,7 +891,7 @@ contract FundingPanel is Ownable, IFundingPanel {
      * @dev find if a member is inserted
      * @return bool for success
      */
-    function isMemberInserted(address memberWallet) public view returns(bool isIndeed) {
+    function isMemberInserted(address memberWallet) public view returns(bool) {
         return membersArray[memberWallet].isInserted;
     }
 
@@ -936,7 +938,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     function enableMember(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 0;
-        emit MemberEnabled();
+        emit MemberEnabled(membersArray[_memberAddress].listPointer);
     }
 
     /**
@@ -945,7 +947,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     function disableMemberByStaffRetire(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 2;
-        emit MemberDisabled();
+        emit MemberDisabled(membersArray[_memberAddress].listPointer);
     }
 
     /**
@@ -954,7 +956,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     function disableMemberByStaffForExit(address _memberAddress) external onlyFundingOperators {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].disabled = 1;
-        emit MemberDisabled();
+        emit MemberDisabled(membersArray[_memberAddress].listPointer);
     }
 
     /**
@@ -962,7 +964,7 @@ contract FundingPanel is Ownable, IFundingPanel {
      */
     function disableMemberByMember(address _memberAddress) external onlyMemberEnabled {
         membersArray[_memberAddress].disabled = 3;
-        emit MemberDisabledByMember();
+        emit MemberDisabledByMember(membersArray[_memberAddress].listPointer);
     }
 
     /**
@@ -972,7 +974,7 @@ contract FundingPanel is Ownable, IFundingPanel {
         require(membersArray[_memberAddress].isInserted, "Member not present");
         membersArray[_memberAddress].memberURL = newURL;
         membersArray[_memberAddress].memberHash = newHash;
-        emit MemberHashChanged();
+        emit MemberDataChanged(membersArray[_memberAddress].listPointer);
     }
 
     /**
@@ -1034,7 +1036,7 @@ contract FundingPanel is Ownable, IFundingPanel {
     function setOwnerData(string calldata _dataURL, bytes32 _dataHash) external onlyOwner {
         setDocURL = _dataURL;
         setDocHash = _dataHash;
-        emit OwnerDataHashChanged();
+        emit OwnerDataChanged();
     }
 
     /**
@@ -1062,7 +1064,7 @@ contract FundingPanel is Ownable, IFundingPanel {
 
     /**
      * @dev get the number of Seed token inside the contract an mint new tokens forthe holders and the wallet "On Top"
-     * @notice msg.sender has to approve transfer the tokens BEFORE calling this function
+     * @notice msg.sender has to approve transfer the seed tokens BEFORE calling this function
      */
     function holderSendSeeds(uint256 _seeds) external holderEnabledInSeeds(msg.sender, _seeds) {
         require(seedToken.balanceOf(address(this)).add(_seeds) <= seedMaxSupply, "Maximum supply reached!");
@@ -1101,7 +1103,7 @@ contract FundingPanel is Ownable, IFundingPanel {
          require(membersArray[memberWallet].isInserted && membersArray[memberWallet].disabled==0, "Member not present or not enabled");
          membersArray[memberWallet].burnedTokens = membersArray[memberWallet].burnedTokens.add(amount);
          token.burn(msg.sender, amount);
-         emit TokensBurnedForMember();
+         emit TokensBurnedForMember(membersArray[memberWallet].listPointer);
     }
 
     /**
@@ -1149,9 +1151,7 @@ contract FPDeployer is Ownable, IFPDeployer {
      * @param _fAddress The factory address.
      */
     function setFactoryAddress(address _fAddress) external onlyOwner {
-        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
-        //require(block.number < 9500000, "Time expired!");  //mainnet
-        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
+        require(block.number < 8850000, "Time expired!");
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }
