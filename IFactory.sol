@@ -16,5 +16,4 @@ interface IFactory {
     function getContractsByIndex(uint256) external view returns (address, address, address, address);
     function getFPAddressByIndex(uint256) external view returns (address);
     function getFactoryContext() external view returns (address, address, uint);
-    function withdraw(address) external;
 }

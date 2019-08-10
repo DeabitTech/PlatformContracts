@@ -58,7 +58,7 @@ contract AdminTools is Ownable, IAdminTools {
     event LogWLAddressRemoved();
 
     constructor (uint256 _whitelistThresholdBalance) public {
-        whitelistThresholdBalance = _whitelistThresholdBalance; //.mul(10**18);
+        whitelistThresholdBalance = _whitelistThresholdBalance;
     }
 
     function setFFPAddresses(address _factoryAddress, address _FPAddress) external onlyOwner {
@@ -140,7 +140,6 @@ contract AdminTools is Ownable, IAdminTools {
 
     function removeWLManagers(address account) external onlyOwner {
         _removeWLManagers(account);
-        _removeWLManagers(account);
     }
 
     function isWLManager(address account) public view returns (bool) {
@@ -152,7 +151,7 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     function removeWLOperators(address account) external onlyWLManagers {
-        _addWLOperators(account);
+        _removeWLOperators(account);
     }
 
     function renounceWLManager() external onlyWLManagers {
@@ -197,7 +196,6 @@ contract AdminTools is Ownable, IAdminTools {
 
     function removeFundingManagers(address account) external onlyOwner {
         _removeFundingManagers(account);
-        _removeFundingManagers(account);
     }
 
     function isFundingManager(address account) public view returns (bool) {
@@ -209,7 +207,7 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     function removeFundingOperators(address account) external onlyFundingManagers {
-        _addFundingOperators(account);
+        _removeFundingOperators(account);
     }
 
     function renounceFundingManager() external onlyFundingManagers {
@@ -248,11 +246,9 @@ contract AdminTools is Ownable, IAdminTools {
     /*   Funds Unlockers Roles Mngmt  */
     function addFundsUnlockerManagers(address account) external onlyOwner {
         _addFundsUnlockerManagers(account);
-        _addFundsUnlockerOperators(account);
     }
 
     function removeFundsUnlockerManagers(address account) external onlyOwner {
-        _removeFundsUnlockerManagers(account);
         _removeFundsUnlockerManagers(account);
     }
 
@@ -265,7 +261,7 @@ contract AdminTools is Ownable, IAdminTools {
     }
 
     function removeFundsUnlockerOperators(address account) external onlyFundsUnlockerManagers {
-        _addFundsUnlockerOperators(account);
+        _removeFundsUnlockerOperators(account);
     }
 
     function renounceFundsUnlockerManager() external onlyFundsUnlockerManagers {

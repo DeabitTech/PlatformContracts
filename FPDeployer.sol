@@ -21,9 +21,7 @@ contract FPDeployer is Ownable, IFPDeployer {
      * @param _fAddress The factory address.
      */
     function setFactoryAddress(address _fAddress) external onlyOwner {
-        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
-        //require(block.number < 9500000, "Time expired!");  //mainnet
-        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
+        require(block.number < 8850000, "Time expired!");
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }

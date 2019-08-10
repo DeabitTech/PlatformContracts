@@ -8,33 +8,8 @@ import "./IATDeployer.sol";
 import "./ITDeployer.sol";
 import "./IFPDeployer.sol";
 
-/**
- * Utility library of inline functions on addresses
- */
-library AddressUtil {
-    /**
-     * Returns whether the target address is a contract
-     * @dev This function will return false if invoked during the constructor of a contract,
-     * as the code is not actually created until after the constructor finishes.
-     * @param account address of the account to check
-     * @return whether the target address is a contract
-     */
-    function isContract(address account) internal view returns (bool) {
-        uint256 size;
-        // XXX Currently there is no better way to check if there is a contract in an address
-        // than to check the size of the code at that address.
-        // See https://ethereum.stackexchange.com/a/14016/36603
-        // for more details about how this works.
-        // TODO Check this again before the Serenity release, because all addresses will be
-        // contracts then.
-        // solhint-disable-next-line no-inline-assembly
-        assembly { size := extcodesize(account) }
-        return size > 0;
-    }
-}
 
 contract Factory is Ownable {
-    using AddressUtil for address;
     using SafeMath for uint256;
 
     address[] public deployerList;
@@ -43,10 +18,10 @@ contract Factory is Ownable {
     address[] public TContractsList;
     address[] public FPContractsList;
 
-    mapping(address => bool) deployers;
-    mapping(address => bool) ATContracts;
-    mapping(address => bool) TContracts;
-    mapping(address => bool) FPContracts;
+    mapping(address => bool) public deployers;
+    mapping(address => bool) public ATContracts;
+    mapping(address => bool) public TContracts;
+    mapping(address => bool) public FPContracts;
 
     IERC20Seed private seedContract;
     address private seedAddress;
@@ -84,9 +59,7 @@ contract Factory is Ownable {
      * @param _newATD new AT deployer address
      */
     function changeATFactoryAddress(address _newATD) external onlyOwner {
-        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
-        //require(block.number < 9500000, "Time expired!");  //mainnet
-        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
+        require(block.number < 8850000, "Time expired!");
         require(_newATD != address(0), "Address not suitable!");
         require(_newATD != ATDAddress, "AT factory address not changed!");
         ATDAddress = _newATD;
@@ -99,9 +72,7 @@ contract Factory is Ownable {
      * @param _newTD new T deployer address
      */
     function changeTDeployerAddress(address _newTD) external onlyOwner {
-        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
-        //require(block.number < 9500000, "Time expired!");  //mainnet
-        //https://codepen.io/adi0v/full/gxEjeP/ Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
+        require(block.number < 8850000, "Time expired!");
         require(_newTD != address(0), "Address not suitable!");
         require(_newTD != TDAddress, "AT factory address not changed!");
         TDAddress = _newTD;
@@ -114,9 +85,7 @@ contract Factory is Ownable {
      * @param _newFPD new FP deployer address
      */
     function changeFPDeployerAddress(address _newFPD) external onlyOwner {
-        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
-        //require(block.number < 9500000, "Time expired!");  //mainnet
-        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
+        require(block.number < 8850000, "Time expired!");
         require(_newFPD != address(0), "Address not suitable!");
         require(_newFPD != ATDAddress, "AT factory address not changed!");
         FPDAddress = _newFPD;
@@ -129,9 +98,7 @@ contract Factory is Ownable {
      * @param _dexAddress internal DEX address
      */
     function setInternalDEXAddress(address _dexAddress) external onlyOwner {
-        require(block.number < 6150000, "Time expired!");  //ropsten (Aug 10)
-        //require(block.number < 9500000, "Time expired!");  //mainnet
-        //https://codepen.io/adi0v/full/gxEjeP/  Fri Feb 07 2020 11:45:55 GMT+0100 (Ora standard dell’Europa centrale)
+        require(block.number < 8850000, "Time expired!");
         require(_dexAddress != address(0), "Address not suitable!");
         require(_dexAddress != internalDEXAddress, "AT factory address not changed!");
         internalDEXAddress = _dexAddress;
@@ -155,7 +122,6 @@ contract Factory is Ownable {
         address sender = msg.sender;
 
         require(sender != address(0), "Sender Address is zero");
-        require(!sender.isContract(), "Sender is a Contract");
         require(internalDEXAddress != address(0), "Internal DEX Address is zero");
 
         deployers[sender] = true;
@@ -273,10 +239,4 @@ contract Factory is Ownable {
         return (seedAddress, internalDEXAddress, factoryDeployBlock);
     }
 
-    /**
-     * @dev withdraw SEED tokens to a collector address
-     */
-    function withdraw(address _collector) external onlyOwner {
-        seedContract.transfer(_collector, seedContract.balanceOf(address(this)));
-    }
 }
