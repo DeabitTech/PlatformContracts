@@ -59,7 +59,6 @@ contract Factory is Ownable {
      * @param _newATD new AT deployer address
      */
     function changeATFactoryAddress(address _newATD) external onlyOwner {
-        require(block.number < 8850000, "Time expired!");
         require(_newATD != address(0), "Address not suitable!");
         require(_newATD != ATDAddress, "AT factory address not changed!");
         ATDAddress = _newATD;
@@ -72,7 +71,6 @@ contract Factory is Ownable {
      * @param _newTD new T deployer address
      */
     function changeTDeployerAddress(address _newTD) external onlyOwner {
-        require(block.number < 8850000, "Time expired!");
         require(_newTD != address(0), "Address not suitable!");
         require(_newTD != TDAddress, "AT factory address not changed!");
         TDAddress = _newTD;
@@ -85,7 +83,6 @@ contract Factory is Ownable {
      * @param _newFPD new FP deployer address
      */
     function changeFPDeployerAddress(address _newFPD) external onlyOwner {
-        require(block.number < 8850000, "Time expired!");
         require(_newFPD != address(0), "Address not suitable!");
         require(_newFPD != ATDAddress, "AT factory address not changed!");
         FPDAddress = _newFPD;
@@ -98,7 +95,6 @@ contract Factory is Ownable {
      * @param _dexAddress internal DEX address
      */
     function setInternalDEXAddress(address _dexAddress) external onlyOwner {
-        require(block.number < 8850000, "Time expired!");
         require(_dexAddress != address(0), "Address not suitable!");
         require(_dexAddress != internalDEXAddress, "AT factory address not changed!");
         internalDEXAddress = _dexAddress;

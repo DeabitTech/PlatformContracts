@@ -14,7 +14,6 @@ contract TDeployer is Ownable, ITDeployer {
     }
 
     function setFactoryAddress(address _fAddress) external onlyOwner {
-        require(block.number < 8850000, "Time expired!");
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }

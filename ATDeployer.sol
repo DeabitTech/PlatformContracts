@@ -20,7 +20,6 @@ contract ATDeployer is Ownable, IATDeployer {
      * @param _fAddress The factory address.
      */
     function setFactoryAddress(address _fAddress) external onlyOwner {
-        require(block.number < 8850000, "Time expired!");
         require(_fAddress != address(0), "Address not allowed");
         fAddress = _fAddress;
     }
