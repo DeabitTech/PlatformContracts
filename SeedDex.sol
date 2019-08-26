@@ -144,7 +144,7 @@ contract SeedDex {
   /// Logging Events
   event Order(address indexed tokenGet, uint amountGet, address indexed tokenGive, uint amountGive, uint expires, uint nonce, address indexed user);
   event Cancel(address indexed tokenGet, uint amountGet, address indexed tokenGive, uint amountGive, uint expires, uint nonce, address indexed user);
-  event Trade(address indexed tokenGet, uint amountGet, address  indexed tokenGive, uint amountGive, uint expires, uint nonce, address indexed get, uint executedAmount, address give);
+  event Trade(address indexed tokenGet, uint amountGet, address  indexed tokenGive, uint amountGive, uint expires, uint nonce, address indexed get, uint amount, uint executedAmount, address give);
   event Deposit(address indexed token, address indexed user, uint amount, uint balance);
   event Withdraw(address indexed token, address indexed user, uint amount, uint balance);
 
@@ -259,8 +259,7 @@ contract SeedDex {
           uint amountGive,
           uint expires,
           uint nonce) public {
-    require( expires > block.number, "expires must be in the future");
-
+    require(expires > block.number, "expires must be in the future");
     require(isValidPair(tokenGet, tokenGive), "Not a valid pair");
     require(canBeTransferred(tokenGet, msg.sender, amountGet), "Token quota exceeded");
     bytes32 hash = sha256(abi.encodePacked(this, tokenGet, amountGet, tokenGive, amountGive, expires, nonce));
@@ -305,8 +304,7 @@ contract SeedDex {
     tradeBalances(tokenGet, amountGet, tokenGive, amountGive, user, amount);
     orderFills[user][hash] = orderFills[user][hash].add(amount);
     uint executedAmount = amountGive.mul(amount) / amountGet;
-
-    emit Trade(tokenGet, amount, tokenGive, amountGive, expires, nonce, user, executedAmount, msg.sender);
+    emit Trade(tokenGet, amountGet, tokenGive, amountGive, expires, nonce, user, amount, executedAmount, msg.sender);
   }
 
   /**
