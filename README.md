@@ -1,7 +1,4 @@
-# PlatformContracts
-Contracts for Seed Platform 
-
-Here you can find solidity contracts for Seed Project to be deployed on ethereum blockchain
+# SEED Platform Contracts
 
 <img src="https://github.com/seedventure/PlatformContracts/blob/master/SeedPlatform.png" width='600px'>
 
