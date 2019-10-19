@@ -5,9 +5,15 @@ Here you can find solidity contracts for Seed Project to be deployed on ethereum
 
 <img src="https://github.com/seedventure/PlatformContracts/blob/master/SeedPlatform.png">
 
-•	Factory: contract facility to deploy all other platform contracts. Factory requires 5 parameters:
-o	SEED token address.
-o	ATDeployer address.
-o	TDeployer address.
-o	FPDeployer address.
+•	ATDeployer: AdminTools contracts deployer. No parameter.
+
+•	TDeployer: Token contracts deployer. No parameter
+
+•	FPDeployer: Funding Panel contracts deployer. No parameter
+
+•	Factory: contract facility to deploy all other platform contracts. Factory requires 4 parameters:
+SEED token address.
+ATDeployer address.
+TDeployer address.
+FPDeployer address.
 
