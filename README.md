@@ -38,3 +38,6 @@ Whitelist managers and operators could whitelist addresses to send SEED tokens t
 Funds unlocker managers and operators could add startup to Funding Panel and could unlock funds to inserted startups.
 
 Whitelisted addresses could send SEED tokens to Funding Panel contract address, receiving set tokens back.
+Set tokens owners could use the internal DEX to trade their tokens.
+
+A desktop and mobile client should have been provided to make all the described process easier for anyone.
