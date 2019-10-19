@@ -5,6 +5,7 @@ Here you can find solidity contracts for Seed Project to be deployed on ethereum
 
 <img src="https://github.com/seedventure/PlatformContracts/blob/master/SeedPlatform.png" width='600px'>
 
+Seed Platform consists of the following 5 contracts:
 +	ATDeployer: AdminTools contracts deployer. No parameter.
 +	TDeployer: Token contracts deployer. No parameter.
 +	FPDeployer: Funding Panel contracts deployer. No parameter.
